@@ -1,0 +1,566 @@
+﻿:root {
+    --gold: #d4af37;
+    --gold-bright: #fbbf24;
+    --gold-glow: rgba(251, 191, 36, 0.35);
+    --dark-bg: #07090e;
+    --console-bg: #0c1017;
+    --console-panel: rgba(18, 24, 38, 0.95);
+    --border-brass: #854d0e;
+    --border-brass-bright: #d97706;
+    --border-subtle: rgba(255, 255, 255, 0.1);
+    --red-danger: #ef4444;
+    --green-safe: #10b981;
+    --blue-accent: #38bdf8;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    background-color: var(--dark-bg);
+    color: #e2e8f0;
+    font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+}
+
+#aoe-root {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: #000;
+}
+
+/* ==========================================================================
+   1. TOP RTS RESOURCE & MENU BAR (AoE2 Style)
+   ========================================================================== */
+#top-bar {
+    height: 46px;
+    background: linear-gradient(180deg, #1e1b18 0%, #0f0e0c 100%);
+    border-bottom: 2px solid var(--border-brass);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    z-index: 50;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+}
+
+.top-left-epoch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.crest-icon {
+    font-size: 24px;
+    filter: drop-shadow(0 0 8px var(--gold-bright));
+}
+
+.epoch-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.epoch-label {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--gold-bright);
+    letter-spacing: 0.8px;
+}
+
+.age-progress-track {
+    width: 120px;
+    height: 4px;
+    background: #27272a;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 2px;
+}
+
+.age-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d97706, #fbbf24);
+    transition: width 0.3s;
+}
+
+.resource-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 4px 14px;
+    border-radius: 4px;
+    border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.res-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: default;
+}
+
+.res-icon { font-size: 14px; }
+.res-val { color: #f8fafc; font-family: 'Cinzel', serif; }
+
+.top-menu-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.top-menu-btn {
+    background: linear-gradient(180deg, #2d261e 0%, #17130e 100%);
+    border: 1px solid var(--border-brass);
+    color: #e2e8f0;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.top-menu-btn:hover {
+    border-color: var(--gold-bright);
+    color: var(--gold-bright);
+    background: #3d3224;
+}
+
+.btn-danger-top {
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+.btn-danger-top:hover {
+    background: #7f1d1d;
+    color: #fff;
+}
+
+/* ==========================================================================
+   2. MAIN FULLSCREEN RTS VIEWPORT
+   ========================================================================== */
+#viewport-container {
+    flex: 1;
+    position: relative;
+    background: #0a0d14;
+    cursor: crosshair;
+    overflow: hidden;
+}
+
+#rtsCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.game-toast {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--gold-bright);
+    padding: 8px 16px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 30;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    animation: toastPop 0.3s ease-out;
+}
+
+@keyframes toastPop {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.toast-body h4 { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold-bright); }
+.toast-body p { font-size: 11px; color: #cbd5e1; }
+
+/* ==========================================================================
+   3. AOE2 BOTTOM COMMAND CONSOLE
+   ========================================================================== */
+#bottom-console {
+    height: 160px;
+    background: linear-gradient(180deg, #1c1813 0%, #0d0b09 100%);
+    border-top: 3px solid var(--border-brass-bright);
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    z-index: 40;
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.9);
+    gap: 12px;
+}
+
+.console-section {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--border-brass);
+    border-radius: 4px;
+    padding: 6px 10px;
+    display: flex;
+}
+
+/* Left: Minimap & Stances */
+.console-left {
+    width: 220px;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.minimap-frame {
+    width: 100%;
+    height: 100px;
+    background: #05070a;
+    border: 1px solid rgba(217, 119, 6, 0.4);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+#minimapCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.stance-subbar {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.stance-btn {
+    flex: 1;
+    background: #1f1b16;
+    border: 1px solid #453725;
+    color: #cbd5e1;
+    font-size: 12px;
+    padding: 3px 0;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.stance-btn:hover, .stance-btn.active {
+    background: #d97706;
+    color: #000;
+}
+
+/* Center: Portrait & Unit Stats */
+.console-center {
+    flex: 1;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.portrait-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-right: 1px solid var(--border-subtle);
+    padding-right: 16px;
+    min-width: 220px;
+}
+
+.portrait-icon {
+    font-size: 40px;
+    background: #090b10;
+    border: 2px solid var(--gold-bright);
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.portrait-meta h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--gold-bright);
+}
+
+.portrait-meta span {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.status-metrics-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #cbd5e1;
+}
+
+.metric-row strong {
+    color: #f8fafc;
+}
+
+/* Right: 3x5 AoE2 Command Grid */
+.console-right {
+    width: 320px;
+    padding: 6px;
+}
+
+.command-grid {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 4px;
+}
+
+.cmd-tile {
+    background: linear-gradient(180deg, #2b2319 0%, #14100b 100%);
+    border: 1px solid #5c472b;
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.1s ease;
+}
+
+.cmd-tile:hover {
+    border-color: var(--gold-bright);
+    background: #4a3924;
+    transform: scale(1.04);
+}
+
+.cmd-tile:active {
+    transform: scale(0.96);
+}
+
+.cmd-icon {
+    font-size: 16px;
+}
+
+.cmd-hotkey {
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 8px;
+    font-weight: 800;
+    color: var(--gold-bright);
+    font-family: 'Cinzel', serif;
+}
+
+.cmd-cost {
+    position: absolute;
+    bottom: 2px;
+    right: 3px;
+    font-size: 8px;
+    color: #94a3b8;
+    font-weight: 700;
+}
+
+.cmd-tile.empty {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px dashed rgba(255, 255, 255, 0.05);
+    cursor: default;
+}
+.cmd-tile.empty:hover { transform: none; border-color: rgba(255, 255, 255, 0.05); }
+
+/* ==========================================================================
+   4. MODALS (MENU SCREENS)
+   ========================================================================== */
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(6px);
+}
+
+.modal-card {
+    width: 680px;
+    background: linear-gradient(180deg, #171b26 0%, #0c0f17 100%);
+    border: 2px solid var(--border-brass-bright);
+    border-radius: 6px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: linear-gradient(180deg, #24201a 0%, #12100d 100%);
+    border-bottom: 1px solid var(--border-brass);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    color: var(--gold-bright);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 16px;
+    cursor: pointer;
+}
+.modal-close:hover { color: #fff; }
+
+.modal-body {
+    padding: 16px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modal-grid-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.diplo-box {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    padding: 12px;
+    border-radius: 4px;
+}
+
+.diplo-box h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--gold-bright);
+    margin-bottom: 8px;
+}
+
+.diplo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.diplo-table th {
+    text-align: left;
+    padding: 6px 8px;
+    color: #94a3b8;
+    border-bottom: 1px solid var(--border-subtle);
+    font-family: 'Cinzel', serif;
+}
+
+.diplo-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.table-bar {
+    width: 80px;
+    height: 6px;
+    background: #1e293b;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.table-bar div { height: 100%; }
+
+.diplo-action-btn {
+    background: #24201a;
+    border: 1px solid var(--border-brass);
+    color: #cbd5e1;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-right: 4px;
+}
+
+.diplo-action-btn:hover {
+    border-color: var(--gold-bright);
+    color: #fff;
+    background: #3d3224;
+}
+
+.diplo-action-btn.btn-danger {
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+.diplo-action-btn.btn-danger:hover {
+    background: #ef4444;
+    color: #fff;
+}
+
+.theme-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    padding: 12px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.theme-card.active {
+    border-color: var(--gold-bright);
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+}
+
+.theme-card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    color: var(--gold-bright);
+    margin-bottom: 4px;
+}
+
+.theme-card p {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.4;
+    margin-bottom: 10px;
+}
+
+.theme-pick-btn {
+    background: var(--gold-bright);
+    border: none;
+    color: #000;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 10px;
+    padding: 6px 0;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.hidden { display: none !important; }

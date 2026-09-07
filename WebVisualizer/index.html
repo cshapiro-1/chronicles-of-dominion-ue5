@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHRONICLES OF DOMINION // RTS COMMAND CONSOLE</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="aoe-root">
+        <!-- TOP RTS RESOURCE & MENU BAR -->
+        <header id="top-bar">
+            <div class="top-left-epoch">
+                <span id="epoch-crest" class="crest-icon">🥉</span>
+                <div class="epoch-meta">
+                    <span id="epoch-name" class="epoch-label">BRONZE AGE (3,000 BCE)</span>
+                    <div class="age-progress-track"><div id="age-progress-bar" class="age-progress-fill" style="width: 25%;"></div></div>
+                </div>
+            </div>
+
+            <!-- AOE2 RESOURCE TICKERS -->
+            <div class="resource-bar">
+                <div class="res-item" title="Grain / Food Supply">
+                    <span class="res-icon">🌾</span>
+                    <span id="res-food" class="res-val">1,250</span>
+                </div>
+                <div class="res-item" title="Lumber / Timber">
+                    <span class="res-icon">🪵</span>
+                    <span id="res-wood" class="res-val">840</span>
+                </div>
+                <div class="res-item" title="Silver & Gold Treasury">
+                    <span class="res-icon">🪙</span>
+                    <span id="res-gold" class="res-val">5,000</span>
+                </div>
+                <div class="res-item" title="Bronze & Copper Ore">
+                    <span class="res-icon">🧱</span>
+                    <span id="res-stone" class="res-val">620</span>
+                </div>
+                <div class="res-item" title="Active Population / Housing Cap">
+                    <span class="res-icon">👥</span>
+                    <span id="res-pop" class="res-val">42 / 60</span>
+                </div>
+            </div>
+
+            <!-- TOP RIGHT DROP-DOWN MENU BUTTONS -->
+            <div class="top-menu-actions">
+                <button class="top-menu-btn" id="btn-menu-diplo">👑 DIPLOMACY</button>
+                <button class="top-menu-btn" id="btn-menu-demographics">⚖️ DEMOGRAPHICS & STRIFE</button>
+                <button class="top-menu-btn" id="btn-menu-theme">🎨 GRAPHICS KIT</button>
+                <button class="top-menu-btn btn-danger-top" id="btn-menu-savagery">💀 SAVAGERY & CONQUEST</button>
+                <button class="top-menu-btn" id="btn-menu-advance">⚡ ADVANCE AGE</button>
+            </div>
+        </header>
+
+        <!-- MAIN FULLSCREEN RTS VIEWPORT CANVAS -->
+        <main id="viewport-container">
+            <canvas id="rtsCanvas"></canvas>
+            <div class="selection-marquee" id="marquee"></div>
+
+            <!-- Real-time Alert Toast -->
+            <div id="game-toast" class="game-toast hidden">
+                <span id="toast-icon">⚠️</span>
+                <div class="toast-body">
+                    <h4 id="toast-title">ALERT</h4>
+                    <p id="toast-desc">Description</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- AOE2 BOTTOM COMMAND CONSOLE -->
+        <footer id="bottom-console">
+            <!-- LEFT PANEL: MINIMAP & STANCES -->
+            <div class="console-section console-left">
+                <div class="minimap-frame">
+                    <canvas id="minimapCanvas" width="180" height="110"></canvas>
+                </div>
+                <div class="stance-subbar">
+                    <button class="stance-btn active" title="Aggressive Stance">⚔️</button>
+                    <button class="stance-btn" title="Defensive Stance">🛡️</button>
+                    <button class="stance-btn" title="Stand Ground">🛑</button>
+                    <button class="stance-btn" title="No Attack">🕊️</button>
+                </div>
+            </div>
+
+            <!-- CENTER PANEL: SELECTION INFO & STATS -->
+            <div class="console-section console-center">
+                <div class="portrait-box">
+                    <div id="selection-portrait" class="portrait-icon">🏛️</div>
+                    <div class="portrait-meta">
+                        <h3 id="selection-title">ZIGGURAT OF UR</h3>
+                        <span id="selection-subtitle">Town Center / High Temple</span>
+                    </div>
+                </div>
+
+                <div class="status-metrics-grid">
+                    <div class="metric-row">
+                        <span>Integrity / HP:</span>
+                        <strong id="stat-hp" style="color: #10b981;">2,400 / 2,400</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Garrison / Staff:</span>
+                        <strong id="stat-garrison">12 / 20 Priests & Builders</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Infant Mortality Rate (IMR):</span>
+                        <strong id="stat-imr" style="color: #f59e0b;">380 / 1,000 (38%)</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Class Unrest / Strife:</span>
+                        <strong id="stat-unrest" style="color: #38bdf8;">Low (20%)</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: 3x5 COMMAND & BUILD GRID -->
+            <div class="console-section console-right">
+                <div class="command-grid" id="command-grid">
+                    <!-- Dynamically populated 15-button AoE2 grid -->
+                </div>
+            </div>
+        </footer>
+
+        <!-- MODAL DIALOGS (CLEAN MENU-BASED SCREENS) -->
+        <!-- 1. DIPLOMACY MODAL -->
+        <div id="modal-diplomacy" class="modal-backdrop hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>👑 GRAND COUNCIL & DIPLOMACY</h2>
+                    <button class="modal-close" data-close="modal-diplomacy">✕</button>
+                </div>
+                <div class="modal-body">
+                    <table class="diplo-table">
+                        <thead>
+                            <tr>
+                                <th>CIVILIZATION</th>
+                                <th>LEADER</th>
+                                <th>STATUS / STANCE</th>
+                                <th>RELATION</th>
+                                <th>TRIBUTE / ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>🏛️ Kingdom of Ur</td>
+                                <td>King Mesannepada</td>
+                                <td style="color: #10b981;">Friendly (Trade Partner)</td>
+                                <td><div class="table-bar"><div id="bar-rel-ur" style="width: 65%; background: #10b981;"></div></div></td>
+                                <td>
+                                    <button class="diplo-action-btn" id="btn-tribute-ur">Send Grain (100🌾)</button>
+                                    <button class="diplo-action-btn" id="btn-pact-ur">Sign Alliance</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>☀️ Pharaoh of Khem</td>
+                                <td>Pharaoh Narmer</td>
+                                <td style="color: #fbbf24;">Neutral (Border Rival)</td>
+                                <td><div class="table-bar"><div id="bar-rel-khem" style="width: 45%; background: #fbbf24;"></div></div></td>
+                                <td>
+                                    <button class="diplo-action-btn" id="btn-marry-khem">Royal Marriage</button>
+                                    <button class="diplo-action-btn" id="btn-embargo-khem">Embargo</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>🐺 Elamite Hill Horde</td>
+                                <td>Warlord Khumban</td>
+                                <td style="color: #ef4444;">Hostile (Raiding)</td>
+                                <td><div class="table-bar"><div id="bar-rel-elam" style="width: 15%; background: #ef4444;"></div></div></td>
+                                <td>
+                                    <button class="diplo-action-btn btn-danger" id="btn-demand-tribute-elam">Demand Tribute</button>
+                                    <button class="diplo-action-btn btn-danger" id="btn-declare-war-elam">Declare War</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. POPULATION & STRIFE MODAL -->
+        <div id="modal-demographics" class="modal-backdrop hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>⚖️ DEMOGRAPHICS, AGE PYRAMID & POWER STRIFE</h2>
+                    <button class="modal-close" data-close="modal-demographics">✕</button>
+                </div>
+                <div class="modal-body modal-grid-split">
+                    <div class="diplo-box">
+                        <h3>📊 4-TIER AGE PYRAMID & HEALTHCARE</h3>
+                        <div class="metric-row" style="margin: 8px 0;"><span>👴 Elders (50+):</span><strong id="modal-pyr-elders">800 (5%)</strong></div>
+                        <div class="metric-row" style="margin: 8px 0;"><span>⚒️ Working Adults (15-50):</span><strong id="modal-pyr-adults" style="color: #38bdf8;">6,500 (43%)</strong></div>
+                        <div class="metric-row" style="margin: 8px 0;"><span>👦 Children (5-14):</span><strong id="modal-pyr-children" style="color: #10b981;">4,200 (28%)</strong></div>
+                        <div class="metric-row" style="margin: 8px 0;"><span>🍼 Infants (0-4):</span><strong id="modal-pyr-infants" style="color: #fbbf24;">3,500 (24%)</strong></div>
+                        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">
+                        <button class="diplo-action-btn" id="btn-fund-wells" style="width: 100%; margin-bottom: 6px;">⛲ Fund Deep Wells (-15% Infant Mortality)</button>
+                        <button class="diplo-action-btn" id="btn-fund-midwives" style="width: 100%;">🏥 Subsidize Midwifery Guild (-15% Infant Mortality)</button>
+                    </div>
+
+                    <div class="diplo-box">
+                        <h3>⛪ DUAL AUTHORITY & CLASS TAXATION</h3>
+                        <div class="metric-row" style="margin: 8px 0;">
+                            <span>Crown vs Priesthood Balance:</span>
+                            <strong style="color: #fbbf24;">50% / 50% Concordat</strong>
+                        </div>
+                        <div class="metric-row" style="margin: 8px 0;">
+                            <span>Grain Tithe / Labor Tax:</span>
+                            <strong id="modal-tax-val">18%</strong>
+                        </div>
+                        <input type="range" min="5" max="50" value="18" id="modal-tax-slider" style="width: 100%; margin: 8px 0;">
+                        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">
+                        <button class="diplo-action-btn" id="btn-rations" style="width: 100%; margin-bottom: 6px;">🍞 Distribute Emergency Temple Rations</button>
+                        <button class="diplo-action-btn btn-danger" id="btn-secularize" style="width: 100%;">⚔️ Seize Temple Lands for the State</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. GRAPHICS KIT MODAL -->
+        <div id="modal-theme" class="modal-backdrop hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>🎨 MODULAR GRAPHICS & CULTURE KITS</h2>
+                    <button class="modal-close" data-close="modal-theme">✕</button>
+                </div>
+                <div class="modal-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="theme-card active" data-theme="alluvial">
+                        <h3>🥉 Sun-Drenched Alluvial (Akkad)</h3>
+                        <p>Sun-baked mudbrick ziggurats, turquoise irrigation canals, golden barley fields, and palm groves.</p>
+                        <button class="theme-pick-btn">APPLY THEME</button>
+                    </div>
+                    <div class="theme-card" data-theme="grimdark">
+                        <h3>🔥 Mythic Grimdark Smog (Ur-Ghul)</h3>
+                        <p>Charred slate, blood-red rivers, industrial smelting smog, burning fire braziers, and iron trim.</p>
+                        <button class="theme-pick-btn">APPLY THEME</button>
+                    </div>
+                    <div class="theme-card" data-theme="classical">
+                        <h3>🏛️ Classical Imperial Marble (Athenia)</h3>
+                        <p>Polished white limestone columns, red terracotta roofs, deep sapphire bay, and olive orchards.</p>
+                        <button class="theme-pick-btn">APPLY THEME</button>
+                    </div>
+                    <div class="theme-card" data-theme="nordic">
+                        <h3>🌲 Nordic Timber & Mist (Norsgard)</h3>
+                        <p>Hewn pine log longhouses, peat moss thatch, glacial cyan fjords, and atmospheric morning mist.</p>
+                        <button class="theme-pick-btn">APPLY THEME</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. SAVAGERY & CONQUEST MODAL -->
+        <div id="modal-savagery" class="modal-backdrop hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>💀 SAVAGERY, CONQUEST & SOCIETAL BLOWBACK</h2>
+                    <button class="modal-close" data-close="modal-savagery">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">
+                        Dark conquest policies grant immediate plunder or terror, but trigger catastrophic geopolitical coalitions, plague outbreaks, and legion mutinies.
+                    </p>
+                    <div class="metric-row" style="margin-bottom: 8px;">
+                        <span>Current Imperial Savagery Index:</span>
+                        <strong id="modal-savagery-val" style="color: #10b981;">0% (Honorable)</strong>
+                    </div>
+                    <div class="metric-row" style="margin-bottom: 8px;">
+                        <span>World Coalition Threat Level:</span>
+                        <strong id="modal-infamy-val" style="color: #10b981;">0% (Peace)</strong>
+                    </div>
+                    <div class="modal-decrees-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
+                        <button class="diplo-action-btn" id="btn-spoils-sack">🔥 Pillage & Sack (+1,000🪙 / +15% Fear)</button>
+                        <button class="diplo-action-btn" id="btn-spoils-slave">⛓️ Mass Enslavement (+2,000 Slaves)</button>
+                        <button class="diplo-action-btn btn-danger" id="btn-spoils-purge" style="grid-column: span 2;">💀 Total Annihilation (Execute All Inhabitants)</button>
+                        <button class="diplo-action-btn btn-danger" id="btn-spoils-salt" style="grid-column: span 2;">🧂 Salt the Earth & Poison Aquifers</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="src/epoch_sim.js"></script>
+</body>
+</html>

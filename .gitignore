@@ -1,0 +1,28 @@
+﻿# Unreal Engine GitIgnore
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+.idea/
+.vscode/
+*.sln
+*.slnx
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.VC.db
+*.opendb
+*.db
+*.log
+*.tmp
+
+# Ignore heavy stock template binaries (engine generates / includes these standard)
+Content/Characters/
+Content/Environment/
+Content/LevelPrototyping/
+
+# OS Files
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,8 @@
+﻿{
+  "mcpServers": {
+    "unreal": {
+      "command": "node",
+      "args": ["C:\\Users\\Collin\\.gemini\\antigravity\\scratch\\unreal-mcp-server\\index.js"]
+    }
+  }
+}
