@@ -5,6 +5,7 @@
 #include "DominionTypes.h"
 #include "DominionUnitActor.generated.h"
 
+class UCapsuleComponent;
 class UStaticMeshComponent;
 class USkeletalMeshComponent;
 class UDecalComponent;
@@ -134,6 +135,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
 	EDominionCombatState CombatState = EDominionCombatState::Idle;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> UnitMesh;

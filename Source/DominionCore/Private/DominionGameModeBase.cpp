@@ -36,12 +36,9 @@ void ADominionGameModeBase::StartPlay()
 		if (Act && Act != this)
 		{
 			FString ActorName = Act->GetName();
-			if (ActorName.Contains(TEXT("DirectionalLight")) || ActorName.Contains(TEXT("SkyLight")) ||
-			    ActorName.Contains(TEXT("ExponentialHeightFog")) || ActorName.Contains(TEXT("SkyAtmosphere")) ||
-			    ActorName.Contains(TEXT("SM_SkySphere")) || ActorName.Contains(TEXT("VolumetricCloud")) ||
-			    ActorName.Contains(TEXT("Floor")) || ActorName.Contains(TEXT("SM_Ramp")) ||
-			    ActorName.Contains(TEXT("SM_QuarterCylinder")) || ActorName.Contains(TEXT("TopDownCharacter")) ||
-			    ActorName.Contains(TEXT("BP_TopDown")))
+			if (ActorName.Contains(TEXT("SM_SkySphere")) || ActorName.Contains(TEXT("TopDownCharacter")) ||
+			    ActorName.Contains(TEXT("BP_TopDown")) || ActorName.Contains(TEXT("SM_Ramp")) ||
+			    ActorName.Contains(TEXT("SM_QuarterCylinder")))
 			{
 				Act->Destroy();
 			}

@@ -2,9 +2,11 @@
 #include "DominionTextureFactory.h"
 #include "DominionFormationSystem.h"
 #include "DominionPoliticalEstatesSystem.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Animation/Skeleton.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/Engine.h"
 #include "DrawDebugHelpers.h"
@@ -27,28 +29,46 @@ ADominionUnitActor::ADominionUnitActor()
 	UStaticMesh* ConeMesh = ConeFinder.Succeeded() ? ConeFinder.Object : nullptr;
 	USkeletalMesh* MannyMesh = MannyFinder.Succeeded() ? MannyFinder.Object : nullptr;
 
-	// Root Unit Torso / Chassis
+	// 1. Root Capsule Collider (Eliminates FindTeleportSpot intersection warnings)
+	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
+	RootComponent = CapsuleComponent;
+	CapsuleComponent->InitCapsuleSize(42.0f, 96.0f);
+	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
+	CapsuleComponent->SetMobility(EComponentMobility::Movable);
+	CapsuleComponent->SetCanEverAffectNavigation(true);
+
+	// 2. Unit Torso / Chassis Mesh (Modular Static Mesh Fallback)
 	UnitMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("UnitMesh"));
-	RootComponent = UnitMesh;
-	UnitMesh->SetCollisionProfileName(TEXT("Pawn"));
+	UnitMesh->SetupAttachment(RootComponent);
+	UnitMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	UnitMesh->SetMobility(EComponentMobility::Movable);
 	if (CylinderMesh)
 	{
 		UnitMesh->SetStaticMesh(CylinderMesh);
+		UnitMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 		UnitMesh->SetRelativeScale3D(FVector(0.55f, 0.55f, 1.1f));
 	}
 
-	// High-Fidelity 3D Skeletal Mesh Warrior (Photorealistic UE5 Character)
+	// 3. High-Fidelity 3D Skeletal Mesh Warrior (With Skeleton Asset Fallback Guard)
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	SkeletalMesh->SetupAttachment(RootComponent);
 	SkeletalMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (MannyMesh)
+
+	const bool bHasValidSkeleton = (MannyMesh != nullptr && MannyMesh->GetSkeleton() != nullptr);
+	if (bHasValidSkeleton)
 	{
 		SkeletalMesh->SetSkeletalMesh(MannyMesh);
 		SkeletalMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 		SkeletalMesh->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 		SkeletalMesh->SetRelativeScale3D(FVector(0.95f, 0.95f, 0.95f));
 		UnitMesh->SetVisibility(false); // Hide the prototype geometric cylinder
+	}
+	else
+	{
+		// Safe fallback: disable skeletal component to avoid animation evaluator warnings
+		SkeletalMesh->SetVisibility(false);
+		SkeletalMesh->SetComponentTickEnabled(false);
+		UnitMesh->SetVisibility(true);
 	}
 
 	// 1. Bronze Helmet
@@ -222,7 +242,7 @@ void ADominionUnitActor::BeginPlay()
 	// Dynamic PBR Setup with Metallic & Roughness & Texture Maps
 	auto ApplyDynPBR = [this](UStaticMeshComponent* Comp, const FLinearColor& Color, float Metallic = 0.0f, float Roughness = 0.6f, const FLinearColor& EmissiveColor = FLinearColor::Black)
 	{
-		if (Comp)
+		if (Comp && Comp->GetStaticMesh() && Comp->GetNumMaterials() > 0)
 		{
 			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(this, Color, Metallic, Roughness, EmissiveColor);
 			if (DynMat)
@@ -244,19 +264,23 @@ void ADominionUnitActor::BeginPlay()
 	ApplyDynPBR(CrewMesh, (UnitType == EDominionUnitType::OxCartSupply) ? LinenWhite : TeamColor, 0.0f, 0.8f);
 	ApplyDynPBR(SelectionRingMesh, SolarGold, 0.8f, 0.2f, FLinearColor(2.0f, 1.6f, 0.2f));
 
-	// Apply Dynamic Material Tint to 3D Skeletal Mesh Warrior
-	if (SkeletalMesh)
+	// Apply Dynamic Material Tint to 3D Skeletal Mesh Warrior (with bounds and asset validation)
+	if (SkeletalMesh && SkeletalMesh->GetSkeletalMeshAsset() && SkeletalMesh->IsVisible())
 	{
-		for (int32 m = 0; m < SkeletalMesh->GetNumMaterials(); ++m)
+		const int32 NumMaterials = SkeletalMesh->GetNumMaterials();
+		for (int32 m = 0; m < NumMaterials; ++m)
 		{
-			UMaterialInstanceDynamic* DynMat = SkeletalMesh->CreateAndSetMaterialInstanceDynamic(m);
-			if (DynMat)
+			if (SkeletalMesh->GetMaterial(m) != nullptr)
 			{
-				DynMat->SetVectorParameterValue(TEXT("BaseColor"), TeamColor);
-				DynMat->SetVectorParameterValue(TEXT("Color"), TeamColor);
-				DynMat->SetVectorParameterValue(TEXT("BodyColor"), TeamColor);
-				DynMat->SetScalarParameterValue(TEXT("Metallic"), 0.35f);
-				DynMat->SetScalarParameterValue(TEXT("Roughness"), 0.45f);
+				UMaterialInstanceDynamic* DynMat = SkeletalMesh->CreateAndSetMaterialInstanceDynamic(m);
+				if (DynMat)
+				{
+					DynMat->SetVectorParameterValue(TEXT("BaseColor"), TeamColor);
+					DynMat->SetVectorParameterValue(TEXT("Color"), TeamColor);
+					DynMat->SetVectorParameterValue(TEXT("BodyColor"), TeamColor);
+					DynMat->SetScalarParameterValue(TEXT("Metallic"), 0.35f);
+					DynMat->SetScalarParameterValue(TEXT("Roughness"), 0.45f);
+				}
 			}
 		}
 	}
