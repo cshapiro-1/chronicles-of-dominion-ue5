@@ -89,6 +89,7 @@ protected:
 	void OnHotkey_F3();
 	void OnHotkey_F4();
 	void OnHotkey_E();
+	void OnHotkey_L();
 
 	ADominionRTSPawn* EnsureRTSPawn();
 

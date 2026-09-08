@@ -56,8 +56,14 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Dominion|HUD")
     void ToggleTutorial() { bShowTutorialCard = !bShowTutorialCard; }
 
+    UFUNCTION(BlueprintCallable, Category = "Dominion|HUD")
+    void ToggleProductionLedger() { bShowProductionLedger = !bShowProductionLedger; }
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|HUD")
     bool bShowTutorialCard = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|HUD")
+    bool bShowProductionLedger = false;
 
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "HUD Colors")

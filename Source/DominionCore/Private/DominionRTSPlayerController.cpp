@@ -139,6 +139,7 @@ void ADominionRTSPlayerController::SetupInputComponent()
 		InputComponent->BindKey(EKeys::F3, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F3);
 		InputComponent->BindKey(EKeys::F4, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F4);
 		InputComponent->BindKey(EKeys::E, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_E);
+		InputComponent->BindKey(EKeys::L, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_L);
 	}
 }
 
@@ -628,5 +629,13 @@ void ADominionRTSPlayerController::OnHotkey_E()
 	{
 		Estates->EnactEdict((EDominionEdictType)(EdictCycle % 4));
 		EdictCycle++;
+	}
+}
+
+void ADominionRTSPlayerController::OnHotkey_L()
+{
+	if (ADominionRTSHUD* RTSHUD = Cast<ADominionRTSHUD>(GetHUD()))
+	{
+		RTSHUD->ToggleProductionLedger();
 	}
 }

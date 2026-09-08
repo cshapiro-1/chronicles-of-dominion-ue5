@@ -40,12 +40,12 @@ void ADominionRTSHUD::DrawHUD()
 	UFont* DefaultFont = GEngine->GetSmallFont();
 	UFont* MediumFont = GEngine->GetMediumFont() ? GEngine->GetMediumFont() : DefaultFont;
 
-	// 1. Draw Top Resource & Imperial Grand Strategy Header Bar
+	// 1. Draw Top Resource & Macro-Pillar Header Bar
 	const float ScreenW = Canvas->SizeX;
 	const float ScreenH = Canvas->SizeY;
 	const float TopBarH = 54.0f;
 
-	// Top Bar Dark Weathered Slate Background
+	// Top Bar Dark Slate Background
 	FCanvasTileItem TopBarBG(FVector2D(0, 0), FVector2D(ScreenW, TopBarH), FLinearColor(0.03f, 0.04f, 0.06f, 0.97f));
 	TopBarBG.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(TopBarBG);
@@ -53,65 +53,38 @@ void ADominionRTSHUD::DrawHUD()
 	// Top Bar Gold Border Line
 	Canvas->K2_DrawLine(FVector2D(0, TopBarH), FVector2D(ScreenW, TopBarH), 2.5f, FLinearColor(0.92f, 0.72f, 0.22f, 1.0f));
 
-	// Group 1: Core Physical Commodities (Left)
-	struct FResourceBadge
+	// Group 1: Macro Pillars (Left)
+	struct FMacroPillar
 	{
-		FString Label;
+		FString Title;
+		FString NetRate;
 		FLinearColor Color;
 	};
 
-	const FResourceBadge ResBadges[] = {
-		{ TEXT("GRAIN: 1,420 (+45/m)"), FLinearColor(1.0f, 0.90f, 0.40f) },
-		{ TEXT("TIMBER: 850 (+18/m)"), FLinearColor(0.85f, 0.65f, 0.40f) },
-		{ TEXT("STONE: 1,200 (+25/m)"), FLinearColor(0.80f, 0.85f, 0.90f) },
-		{ TEXT("BRONZE: 650 (+12/m)"), FLinearColor(0.95f, 0.65f, 0.25f) },
-		{ TEXT("GOLD: 5,200 (+80/m)"), FLinearColor(1.0f, 0.84f, 0.0f) }
+	const FMacroPillar LeftPillars[] = {
+		{ TEXT("🌾 Sustenance:"), TEXT("1.4k (+45/m)"), FLinearColor(1.0f, 0.90f, 0.40f) },
+		{ TEXT("🪵 Industry:"), TEXT("2.05k (+43/m)"), FLinearColor(0.85f, 0.70f, 0.45f) },
+		{ TEXT("⚔️ Metallurgy:"), TEXT("650 (+12/m)"), FLinearColor(0.95f, 0.65f, 0.25f) }
 	};
 
 	float ResX = 14.0f;
-	for (const FResourceBadge& Badge : ResBadges)
+	for (const FMacroPillar& Pillar : LeftPillars)
 	{
-		float BadgeW = Badge.Label.Len() * 7.2f + 12.0f;
-		FCanvasTileItem BadgeBG(FVector2D(ResX, 8.0f), FVector2D(BadgeW, 36.0f), FLinearColor(0.07f, 0.09f, 0.13f, 0.88f));
-		Canvas->DrawItem(BadgeBG);
+		const float PillarW = 125.0f;
+		FCanvasTileItem PillarBG(FVector2D(ResX, 6.0f), FVector2D(PillarW, 42.0f), FLinearColor(0.07f, 0.09f, 0.13f, 0.90f));
+		Canvas->DrawItem(PillarBG);
 
-		FCanvasBoxItem BadgeBorder(FVector2D(ResX, 8.0f), FVector2D(BadgeW, 36.0f));
-		BadgeBorder.SetColor(Badge.Color * 0.6f);
-		BadgeBorder.LineThickness = 1.0f;
-		Canvas->DrawItem(BadgeBorder);
+		FCanvasBoxItem PillarBorder(FVector2D(ResX, 6.0f), FVector2D(PillarW, 42.0f));
+		PillarBorder.SetColor(Pillar.Color * 0.65f);
+		PillarBorder.LineThickness = 1.0f;
+		Canvas->DrawItem(PillarBorder);
 
-		DrawShadowText(DefaultFont, Badge.Label, ResX + 6.0f, 18.0f, 0.86f, Badge.Color);
-		ResX += BadgeW + 5.0f;
+		DrawShadowText(DefaultFont, Pillar.Title, ResX + 8.0f, 10.0f, 0.78f, Pillar.Color);
+		DrawShadowText(DefaultFont, Pillar.NetRate, ResX + 8.0f, 26.0f, 0.84f, FLinearColor::White);
+		ResX += PillarW + 6.0f;
 	}
 
-	// Group 2: Demographics & Dynamic Supply Line (Center-Left)
-	const FString ManpowerText = TEXT("MANPOWER: 6,500/15k");
-	float ManpowerW = ManpowerText.Len() * 7.2f + 12.0f;
-	FCanvasTileItem ManpowerBG(FVector2D(ResX, 8.0f), FVector2D(ManpowerW, 36.0f), FLinearColor(0.07f, 0.11f, 0.15f, 0.88f));
-	Canvas->DrawItem(ManpowerBG);
-	FCanvasBoxItem ManpowerBorder(FVector2D(ResX, 8.0f), FVector2D(ManpowerW, 36.0f));
-	ManpowerBorder.SetColor(FLinearColor(0.35f, 0.65f, 0.95f, 0.8f));
-	Canvas->DrawItem(ManpowerBorder);
-	DrawShadowText(DefaultFont, ManpowerText, ResX + 6.0f, 18.0f, 0.86f, FLinearColor(0.65f, 0.88f, 1.0f));
-	ResX += ManpowerW + 5.0f;
-
-	// Dynamic Logistics Status Badge
-	UDominionSupplyLineSubsystem* SupplySys = GetWorld() ? GetWorld()->GetSubsystem<UDominionSupplyLineSubsystem>() : nullptr;
-	bool bSupplyActive = SupplySys ? SupplySys->IsSupplyLineActive() : true;
-	FString LogisticsBadge = bSupplyActive ? TEXT("SUPPLY: 100% [42d]") : TEXT("SUPPLY: CUT [T]");
-	FLinearColor SupplyCol = bSupplyActive ? FLinearColor(0.25f, 0.95f, 0.45f, 1.0f) : FLinearColor(1.0f, 0.25f, 0.15f, 1.0f);
-
-	float LogW = LogisticsBadge.Len() * 7.2f + 12.0f;
-	FCanvasTileItem LogBG(FVector2D(ResX, 8.0f), FVector2D(LogW, 36.0f), FLinearColor(0.07f, 0.09f, 0.13f, 0.88f));
-	Canvas->DrawItem(LogBG);
-	FCanvasBoxItem LogBorder(FVector2D(ResX, 8.0f), FVector2D(LogW, 36.0f));
-	LogBorder.SetColor(SupplyCol);
-	LogBorder.LineThickness = 1.2f;
-	Canvas->DrawItem(LogBorder);
-	DrawShadowText(DefaultFont, LogisticsBadge, ResX + 6.0f, 18.0f, 0.86f, SupplyCol);
-	ResX += LogW + 16.0f;
-
-	// --- Group 3: SOUL OF THE ESTATE - 3 ANTIQUE DIAL BAROMETERS ---
+	// --- Group 2: SOUL OF THE ESTATE - 3 ANTIQUE DIAL BAROMETERS (CENTER) ---
 	UDominionPoliticalEstatesSystem* Estates = GetWorld() ? GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>() : nullptr;
 	if (Estates)
 	{
@@ -129,11 +102,9 @@ void ADominionRTSHUD::DrawHUD()
 			{ TEXT("MASSES"), TEXT("SERFS"), Estates->GetMassesLoyalty(), FLinearColor(0.35f, 0.95f, 0.55f) }
 		};
 
-		const float DialDiameter = 40.0f;
 		for (const FEstateDial& Dial : EstateDials)
 		{
-			// Barometer Housing Box
-			const float HousingW = 100.0f;
+			const float HousingW = 95.0f;
 			FCanvasTileItem HousingBG(FVector2D(ResX, 6.0f), FVector2D(HousingW, 42.0f), FLinearColor(0.08f, 0.07f, 0.05f, 0.95f));
 			Canvas->DrawItem(HousingBG);
 
@@ -142,35 +113,96 @@ void ADominionRTSHUD::DrawHUD()
 			HousingBorder.LineThickness = 1.2f;
 			Canvas->DrawItem(HousingBorder);
 
-			// Barometer Circular Needle Gauge (Simulated Dial Face)
-			FVector2D DialCenter(ResX + 22.0f, 27.0f);
-			FCanvasBoxItem DialRing(FVector2D(ResX + 4.0f, 9.0f), FVector2D(36.0f, 36.0f));
+			// Barometer Circular Needle Gauge
+			FVector2D DialCenter(ResX + 20.0f, 27.0f);
+			FCanvasBoxItem DialRing(FVector2D(ResX + 4.0f, 9.0f), FVector2D(34.0f, 34.0f));
 			DialRing.SetColor(Dial.DialColor * 0.7f);
 			Canvas->DrawItem(DialRing);
 
-			// Needle line
 			float AngleRad = FMath::DegreesToRadians(-135.0f + (Dial.Value / 100.0f) * 270.0f);
-			FVector2D NeedleEnd = DialCenter + FVector2D(FMath::Cos(AngleRad) * 14.0f, FMath::Sin(AngleRad) * 14.0f);
+			FVector2D NeedleEnd = DialCenter + FVector2D(FMath::Cos(AngleRad) * 13.0f, FMath::Sin(AngleRad) * 13.0f);
 			Canvas->K2_DrawLine(DialCenter, NeedleEnd, 2.0f, Dial.DialColor);
 
-			// Barometer Text Labels
-			DrawShadowText(DefaultFont, Dial.Title, ResX + 44.0f, 10.0f, 0.76f, Dial.DialColor);
-			DrawShadowText(DefaultFont, FString::Printf(TEXT("%.0f%%"), Dial.Value), ResX + 44.0f, 26.0f, 0.85f, FLinearColor::White);
+			DrawShadowText(DefaultFont, Dial.Title, ResX + 40.0f, 10.0f, 0.74f, Dial.DialColor);
+			DrawShadowText(DefaultFont, FString::Printf(TEXT("%.0f%%"), Dial.Value), ResX + 40.0f, 26.0f, 0.84f, FLinearColor::White);
 
-			ResX += HousingW + 8.0f;
+			ResX += HousingW + 6.0f;
 		}
 	}
 
-	// Pure Historical Epoch Label (Right Aligned - no "EPOCH X:")
-	const FString EpochText = TEXT("BRONZE AGE");
-	const float EpochW = 150.0f;
-	const float EpochX = ScreenW - EpochW - 16.0f;
-	FCanvasTileItem EpochBG(FVector2D(EpochX, 8.0f), FVector2D(EpochW, 36.0f), FLinearColor(0.08f, 0.12f, 0.18f, 0.92f));
+	// Group 3: Treasury & Logistics (Right-Center)
+	const FMacroPillar RightPillars[] = {
+		{ TEXT("🪙 Treasury:"), TEXT("5.2k (+80/m)"), FLinearColor(1.0f, 0.84f, 0.0f) },
+		{ TEXT("📦 Logistics:"), TEXT("100% 42d"), FLinearColor(0.25f, 0.95f, 0.45f) }
+	};
+
+	for (const FMacroPillar& Pillar : RightPillars)
+	{
+		const float PillarW = 120.0f;
+		FCanvasTileItem PillarBG(FVector2D(ResX, 6.0f), FVector2D(PillarW, 42.0f), FLinearColor(0.07f, 0.09f, 0.13f, 0.90f));
+		Canvas->DrawItem(PillarBG);
+
+		FCanvasBoxItem PillarBorder(FVector2D(ResX, 6.0f), FVector2D(PillarW, 42.0f));
+		PillarBorder.SetColor(Pillar.Color * 0.65f);
+		PillarBorder.LineThickness = 1.0f;
+		Canvas->DrawItem(PillarBorder);
+
+		DrawShadowText(DefaultFont, Pillar.Title, ResX + 8.0f, 10.0f, 0.78f, Pillar.Color);
+		DrawShadowText(DefaultFont, Pillar.NetRate, ResX + 8.0f, 26.0f, 0.84f, FLinearColor::White);
+		ResX += PillarW + 6.0f;
+	}
+
+	// Epoch Badge & [L] Ledger Toggle Button (Far Right)
+	const float EpochW = 190.0f;
+	const float EpochX = ScreenW - EpochW - 14.0f;
+	FCanvasTileItem EpochBG(FVector2D(EpochX, 6.0f), FVector2D(EpochW, 42.0f), FLinearColor(0.08f, 0.12f, 0.18f, 0.92f));
 	Canvas->DrawItem(EpochBG);
-	FCanvasBoxItem EpochBorder(FVector2D(EpochX, 8.0f), FVector2D(EpochW, 36.0f));
+	FCanvasBoxItem EpochBorder(FVector2D(EpochX, 6.0f), FVector2D(EpochW, 42.0f));
 	EpochBorder.SetColor(FLinearColor(0.92f, 0.72f, 0.22f, 0.9f));
 	Canvas->DrawItem(EpochBorder);
-	DrawShadowText(MediumFont, EpochText, EpochX + 16.0f, 15.0f, 0.95f, FLinearColor(1.0f, 0.88f, 0.40f, 1.0f));
+	DrawShadowText(MediumFont, TEXT("BRONZE AGE"), EpochX + 10.0f, 12.0f, 0.88f, FLinearColor(1.0f, 0.88f, 0.40f, 1.0f));
+	DrawShadowText(DefaultFont, TEXT("[L] LEDGER"), EpochX + 112.0f, 16.0f, 0.78f, FLinearColor(0.45f, 0.85f, 1.0f));
+
+	// --- EXPANDED OPTION 4: PRODUCTION LEDGER DRAWER PANEL ---
+	if (bShowProductionLedger)
+	{
+		const float DrawerW = 620.0f;
+		const float DrawerH = 210.0f;
+		const float DrawerX = 14.0f;
+		const float DrawerY = TopBarH + 6.0f;
+
+		// Vellum Parchment Background
+		FCanvasTileItem DrawerBG(FVector2D(DrawerX, DrawerY), FVector2D(DrawerW, DrawerH), FLinearColor(0.86f, 0.79f, 0.65f, 0.98f));
+		Canvas->DrawItem(DrawerBG);
+
+		// Hand-carved Slate & Bronze Frame
+		FCanvasBoxItem DrawerBorder(FVector2D(DrawerX, DrawerY), FVector2D(DrawerW, DrawerH));
+		DrawerBorder.SetColor(FLinearColor(0.40f, 0.28f, 0.15f, 1.0f));
+		DrawerBorder.LineThickness = 2.5f;
+		Canvas->DrawItem(DrawerBorder);
+
+		// Drawer Header
+		DrawShadowText(MediumFont, TEXT("▼ PRODUCTION LEDGER & SUPPLY CHAINS"), DrawerX + 16.0f, DrawerY + 12.0f, 0.92f, FLinearColor(0.20f, 0.12f, 0.05f));
+		DrawShadowText(DefaultFont, TEXT("[Press L to Close]"), DrawerX + DrawerW - 120.0f, DrawerY + 14.0f, 0.75f, FLinearColor(0.45f, 0.20f, 0.10f));
+
+		// Supply Chain 1: Sustenance Pipeline
+		const float Line1Y = DrawerY + 44.0f;
+		FCanvasBoxItem Box1(FVector2D(DrawerX + 14.0f, Line1Y), FVector2D(DrawerW - 28.0f, 68.0f));
+		Box1.SetColor(FLinearColor(0.65f, 0.55f, 0.40f, 0.6f));
+		Canvas->DrawItem(Box1);
+
+		DrawShadowText(DefaultFont, TEXT("🌾 GRAIN (1,420)  ➔  🍞 FLOUR & BREAD (850)  ➔  📦 ARMY RATIONS (42 Days)"), DrawerX + 24.0f, Line1Y + 12.0f, 0.85f, FLinearColor(0.18f, 0.12f, 0.05f));
+		DrawShadowText(DefaultFont, TEXT("Harvest: +45/min  •  Milling: 22/min  •  Consumption: 38/min (Net Surplus: +7/m)"), DrawerX + 24.0f, Line1Y + 38.0f, 0.78f, FLinearColor(0.10f, 0.45f, 0.15f));
+
+		// Supply Chain 2: Metallurgy Pipeline
+		const float Line2Y = DrawerY + 124.0f;
+		FCanvasBoxItem Box2(FVector2D(DrawerX + 14.0f, Line2Y), FVector2D(DrawerW - 28.0f, 68.0f));
+		Box2.SetColor(FLinearColor(0.65f, 0.55f, 0.40f, 0.6f));
+		Canvas->DrawItem(Box2);
+
+		DrawShadowText(DefaultFont, TEXT("⛏️ COPPER/TIN (920)  ➔  🔥 BRONZE INGOTS (650)  ➔  ⚔️ WEAPONS & ARMOR (450)"), DrawerX + 24.0f, Line2Y + 12.0f, 0.85f, FLinearColor(0.18f, 0.12f, 0.05f));
+		DrawShadowText(DefaultFont, TEXT("Mining: +24/min  •  Smelting: 16/min  •  Armory Output: 10/min (Equips 20 Hoplites/m)"), DrawerX + 24.0f, Line2Y + 38.0f, 0.78f, FLinearColor(0.55f, 0.30f, 0.05f));
+	}
 
 	// Active Imperial Edict Banner under Top Header
 	if (Estates && Estates->GetActiveEdictRemainingTime() > 0.0f)
