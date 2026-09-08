@@ -6,6 +6,17 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "DominionFormationSystem.generated.h"
 
+/** Tactical Formations for mass cohorts */
+UENUM(BlueprintType)
+enum class EDominionFormation : uint8
+{
+    Line     UMETA(DisplayName = "Line"),
+    Square   UMETA(DisplayName = "Square"),
+    Phalanx  UMETA(DisplayName = "Phalanx"),
+    Skirmish UMETA(DisplayName = "Skirmish")
+};
+
+/** Backward-compatibility formation type */
 UENUM(BlueprintType)
 enum class EFormationType : uint8
 {
@@ -22,16 +33,16 @@ struct FFormationCombatStats
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float BracingBonus; // Strong against cavalry in Phalanx
+    float BracingBonus;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float PenetrationPower; // High in Wedge
+    float PenetrationPower;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float MissileVulnerability; // Low in Skirmish
+    float MissileVulnerability;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float FlankVulnerability; // Handled by Square or Phalanx
+    float FlankVulnerability;
 
     FFormationCombatStats()
         : BracingBonus(1.0f)
@@ -93,7 +104,7 @@ struct FFormationData
  * UDominionFormationSystem
  * Subsystem responsible for Advanced Mass Formations, Physics Combat, and Morale Cascades.
  */
-UCLASS()
+UCLASS(BlueprintType)
 class DOMINIONCORE_API UDominionFormationSystem : public UWorldSubsystem
 {
     GENERATED_BODY()
@@ -102,7 +113,11 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
 
-    // Formation Logic
+    /** Pure local slot offsets calculation for Line, Square, Phalanx, and Skirmish formations */
+    UFUNCTION(BlueprintCallable, Category = "Dominion|Formation")
+    TArray<FVector> GetFormationOffsets(EDominionFormation Formation, int32 UnitCount, float Spacing) const;
+
+    // Formation Lifecycle & State
     UFUNCTION(BlueprintCallable, Category = "Dominion|Formations")
     int32 RegisterFormation(const FFormationData& InitialData);
 

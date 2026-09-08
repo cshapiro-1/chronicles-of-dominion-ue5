@@ -16,6 +16,85 @@ void UDominionFormationSystem::Deinitialize()
     Super::Deinitialize();
 }
 
+TArray<FVector> UDominionFormationSystem::GetFormationOffsets(EDominionFormation Formation, int32 UnitCount, float Spacing) const
+{
+    TArray<FVector> Offsets;
+    if (UnitCount <= 0)
+    {
+        return Offsets;
+    }
+    Offsets.Reserve(UnitCount);
+
+    switch (Formation)
+    {
+    case EDominionFormation::Line:
+        {
+            for (int32 i = 0; i < UnitCount; ++i)
+            {
+                float X = 0.0f;
+                float Y = (static_cast<float>(i) - static_cast<float>(UnitCount - 1) * 0.5f) * Spacing;
+                float Z = 0.0f;
+                Offsets.Emplace(X, Y, Z);
+            }
+            break;
+        }
+
+    case EDominionFormation::Square:
+        {
+            int32 Cols = FMath::Max(1, FMath::CeilToInt(FMath::Sqrt(static_cast<float>(UnitCount))));
+            int32 Rows = FMath::Max(1, FMath::CeilToInt(static_cast<float>(UnitCount) / static_cast<float>(Cols)));
+            for (int32 i = 0; i < UnitCount; ++i)
+            {
+                int32 Row = i / Cols;
+                int32 Col = i % Cols;
+                float X = -(static_cast<float>(Row) - static_cast<float>(Rows - 1) * 0.5f) * Spacing;
+                float Y = (static_cast<float>(Col) - static_cast<float>(Cols - 1) * 0.5f) * Spacing;
+                float Z = 0.0f;
+                Offsets.Emplace(X, Y, Z);
+            }
+            break;
+        }
+
+    case EDominionFormation::Phalanx:
+        {
+            int32 Cols = FMath::Clamp(10, 4, FMath::Max(4, FMath::CeilToInt(FMath::Sqrt(static_cast<float>(UnitCount)))));
+            int32 Rows = FMath::Max(1, FMath::CeilToInt(static_cast<float>(UnitCount) / static_cast<float>(Cols)));
+            float FileSpacing = Spacing * 0.85f;
+            float RankSpacing = Spacing * 0.75f;
+            for (int32 i = 0; i < UnitCount; ++i)
+            {
+                int32 Row = i / Cols;
+                int32 Col = i % Cols;
+                float X = -(static_cast<float>(Row) - static_cast<float>(Rows - 1) * 0.5f) * RankSpacing;
+                float Y = (static_cast<float>(Col) - static_cast<float>(Cols - 1) * 0.5f) * FileSpacing;
+                float Z = 0.0f;
+                Offsets.Emplace(X, Y, Z);
+            }
+            break;
+        }
+
+    case EDominionFormation::Skirmish:
+        {
+            int32 Cols = FMath::Max(4, FMath::CeilToInt(FMath::Sqrt(static_cast<float>(UnitCount) * 1.5f)));
+            int32 Rows = FMath::Max(1, FMath::CeilToInt(static_cast<float>(UnitCount) / static_cast<float>(Cols)));
+            float WideSpacing = Spacing * 1.5f;
+            for (int32 i = 0; i < UnitCount; ++i)
+            {
+                int32 Row = i / Cols;
+                int32 Col = i % Cols;
+                float Stagger = (Row % 2 == 1) ? (Spacing * 0.5f) : 0.0f;
+                float X = -(static_cast<float>(Row) - static_cast<float>(Rows - 1) * 0.5f) * WideSpacing;
+                float Y = (static_cast<float>(Col) - static_cast<float>(Cols - 1) * 0.5f) * WideSpacing + Stagger;
+                float Z = 0.0f;
+                Offsets.Emplace(X, Y, Z);
+            }
+            break;
+        }
+    }
+
+    return Offsets;
+}
+
 int32 UDominionFormationSystem::RegisterFormation(const FFormationData& InitialData)
 {
     int32 NewID = NextFormationID++;
@@ -298,7 +377,6 @@ void UDominionFormationSystem::CalculateFormationSlots(
         case EFormationType::Wedge:
             {
                 // V-shaped shock charge wedge
-                // Row 0 = 1 leader, Row 1 = 2 wingmen, Row 2 = 2 wingmen, etc.
                 if (i == 0)
                 {
                     LocalX = 0.0f;
@@ -316,7 +394,7 @@ void UDominionFormationSystem::CalculateFormationSlots(
 
         case EFormationType::Skirmish:
             {
-                // Loose hexagonal dispersion (250cm spacing to minimize catapult damage)
+                // Loose hexagonal dispersion
                 const int32 Cols = FMath::Max(1, FMath::CeilToInt(FMath::Sqrt((float)TotalUnits * 1.5f)));
                 int32 Row = i / Cols;
                 int32 Col = i % Cols;
