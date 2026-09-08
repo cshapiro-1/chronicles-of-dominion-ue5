@@ -83,6 +83,13 @@ protected:
 	void OnHotkey_V();
 	void OnHotkey_T();
 
+	// Imperial Edict Hotkeys (3-Estate Lawbook)
+	void OnHotkey_F1();
+	void OnHotkey_F2();
+	void OnHotkey_F3();
+	void OnHotkey_F4();
+	void OnHotkey_E();
+
 	ADominionRTSPawn* EnsureRTSPawn();
 
 private:

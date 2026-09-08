@@ -1,9 +1,28 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "DominionTypes.h"
 #include "DominionPoliticalEstatesSystem.generated.h"
+
+UENUM(BlueprintType)
+enum class EDominionEstateType : uint8
+{
+	Priesthood UMETA(DisplayName = "The High Priesthood (First Estate)"),
+	Nobility   UMETA(DisplayName = "The Warlord Nobility (Second Estate)"),
+	Masses     UMETA(DisplayName = "The Common Masses (Third Estate)")
+};
+
+UENUM(BlueprintType)
+enum class EDominionEdictType : uint8
+{
+	SacredGrainTithe    UMETA(DisplayName = "Sacred Grain Tithe (Church)"),
+	FeudalConscription  UMETA(DisplayName = "Feudal Corvée Conscription (Nobles)"),
+	ImperialBreadDole   UMETA(DisplayName = "Imperial Bread Dole (Commoners)"),
+	GladiatorCircus     UMETA(DisplayName = "Grand Gladiator & Chariot Games")
+};
 
 UENUM(BlueprintType)
 enum class EDominionPowerBalance : uint8
@@ -21,48 +40,70 @@ enum class EDominionCulturalPolicy : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnIntraCivCrisisTriggered, FString, CrisisTitle, FString, CrisisDescription);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnImperialEdictEnacted, EDominionEdictType, EdictType, FString, EdictName);
 
 /**
- * Manages intra-civilization fractures:
- * 1. Dual Power balance between Religious Authority (The Church/Temple) and Political Power (The Crown/State)
- * 2. Class strife, strikes, and rebellions
- * 3. Ethnic & cultural tensions across multi-ethnic provincial populations
+ * UDominionPoliticalEstatesSystem
+ * Master Grand Strategy Subsystem managing:
+ * 1. The 3-Estate Power Triad: High Priesthood, Warlord Nobility, Common Masses
+ * 2. Frostpunk-style Hope & Discontent Gauges
+ * 3. Imperial Edict Lawbook / Decrees
+ * 4. Intra-Civ Crises, Strikes, Riots, and Baronial Coups
  */
 UCLASS()
-class DOMINIONCORE_API UDominionPoliticalEstatesSystem : public UWorldSubsystem
+class DOMINIONCORE_API UDominionPoliticalEstatesSystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+	virtual void Tick(float DeltaTime) override;
+	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(UDominionPoliticalEstatesSystem, STATGROUP_Tickables); }
 
-	/** Executes one tick of internal political tension calculations */
+	/** Enact an Imperial Edict from the Lawbook */
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Politics")
-	void ProcessPoliticsTick(float DeltaTime, float CurrentFoodSecurity, float CurrentTaxExploitation);
+	bool EnactEdict(EDominionEdictType EdictType);
 
-	/** Adjusts the Dual Power Balance */
+	/** Adjust an estate's loyalty index */
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Politics")
-	void SetPowerBalance(EDominionPowerBalance NewBalance);
+	void ModifyEstateLoyalty(EDominionEstateType Estate, float Delta);
 
-	/** Adjusts the Cultural / Ethnic Policy */
+	/** Adjust Hope meter */
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Politics")
-	void SetCulturalPolicy(EDominionCulturalPolicy NewPolicy);
+	void ModifyHope(float Delta);
 
-	/** Gets current Religious Authority Index (0-100) */
-	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
-	float GetReligiousAuthority() const { return ReligiousAuthority; }
+	/** Adjust Discontent meter */
+	UFUNCTION(BlueprintCallable, Category = "Dominion|Politics")
+	void ModifyDiscontent(float Delta);
 
-	/** Gets current Secular State Power Index (0-100) */
+	// --- Getters for HUD & Simulation ---
 	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
-	float GetSecularStatePower() const { return SecularStatePower; }
+	float GetPriesthoodLoyalty() const { return PriesthoodLoyalty; }
 
-	/** Gets Class Unrest Index (0-100) */
 	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
-	float GetClassUnrest() const { return ClassUnrest; }
+	float GetNobilityLoyalty() const { return NobilityLoyalty; }
 
-	/** Gets Ethnic Separatism Index (0-100) */
 	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
-	float GetEthnicSeparatism() const { return EthnicSeparatism; }
+	float GetMassesLoyalty() const { return MassesLoyalty; }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
+	float GetHope() const { return Hope; }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
+	float GetDiscontent() const { return Discontent; }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
+	FString GetActiveEdictName() const { return ActiveEdictName; }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
+	float GetActiveEdictRemainingTime() const { return ActiveEdictTimer; }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
+	FString GetRecentCrisisNotification() const { return (CrisisDisplayTimer > 0.0f) ? ActiveCrisisTitle + TEXT(": ") + ActiveCrisisDesc : FString(); }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Politics")
+	float GetCrisisDisplayTimer() const { return CrisisDisplayTimer; }
 
 	/** Applies political and religious blowback from extreme military savagery */
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Politics")
@@ -71,22 +112,54 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Dominion|Politics")
 	FOnIntraCivCrisisTriggered OnCrisisTriggered;
 
+	UPROPERTY(BlueprintAssignable, Category = "Dominion|Politics")
+	FOnImperialEdictEnacted OnEdictEnacted;
+
 protected:
+	// 3 Estates (0 - 100%)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
+	float PriesthoodLoyalty = 65.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
+	float NobilityLoyalty = 60.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
+	float MassesLoyalty = 58.0f;
+
+	// Frostpunk Meters (0 - 100%)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
+	float Hope = 65.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
+	float Discontent = 22.0f;
+
+	// Legacy / Compatibility fields
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
 	EDominionPowerBalance PowerBalance = EDominionPowerBalance::BalancedConcordat;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
 	EDominionCulturalPolicy CulturalPolicy = EDominionCulturalPolicy::ImperialPluralism;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
-	float ReligiousAuthority = 60.0f; // 0-100%
+	// Active Edict
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dominion|Politics")
+	FString ActiveEdictName = TEXT("None");
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
-	float SecularStatePower = 60.0f; // 0-100%
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dominion|Politics")
+	float ActiveEdictTimer = 0.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
-	float ClassUnrest = 20.0f; // 0-100%
+	// Crisis Feedback
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dominion|Politics")
+	FString ActiveCrisisTitle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Politics")
-	float EthnicSeparatism = 25.0f; // 0-100%
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dominion|Politics")
+	FString ActiveCrisisDesc;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dominion|Politics")
+	float CrisisDisplayTimer = 0.0f;
+
+	float CrisisCooldown = 0.0f;
+
+private:
+	void CheckCrises(float DeltaTime);
+	void TriggerCrisis(const FString& Title, const FString& Desc);
 };

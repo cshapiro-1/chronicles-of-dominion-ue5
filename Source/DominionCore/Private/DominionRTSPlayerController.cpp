@@ -6,6 +6,7 @@
 #include "DominionFormationSystem.h"
 #include "DominionSupplyLineSubsystem.h"
 #include "DominionRTSHUD.h"
+#include "DominionPoliticalEstatesSystem.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
@@ -131,6 +132,13 @@ void ADominionRTSPlayerController::SetupInputComponent()
 		InputComponent->BindKey(EKeys::C, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_C);
 		InputComponent->BindKey(EKeys::V, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_V);
 		InputComponent->BindKey(EKeys::T, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_T);
+
+		// Imperial Edict Hotkeys (F1, F2, F3, F4, E)
+		InputComponent->BindKey(EKeys::F1, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F1);
+		InputComponent->BindKey(EKeys::F2, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F2);
+		InputComponent->BindKey(EKeys::F3, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F3);
+		InputComponent->BindKey(EKeys::F4, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F4);
+		InputComponent->BindKey(EKeys::E, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_E);
 	}
 }
 
@@ -576,5 +584,49 @@ void ADominionRTSPlayerController::OnHotkey_T()
 	if (ADominionRTSHUD* RTSHUD = Cast<ADominionRTSHUD>(GetHUD()))
 	{
 		RTSHUD->ToggleTutorial();
+	}
+}
+
+// Imperial Edict Lawbook Hotkeys
+void ADominionRTSPlayerController::OnHotkey_F1()
+{
+	if (UDominionPoliticalEstatesSystem* Estates = GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>())
+	{
+		Estates->EnactEdict(EDominionEdictType::SacredGrainTithe);
+	}
+}
+
+void ADominionRTSPlayerController::OnHotkey_F2()
+{
+	if (UDominionPoliticalEstatesSystem* Estates = GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>())
+	{
+		Estates->EnactEdict(EDominionEdictType::FeudalConscription);
+	}
+}
+
+void ADominionRTSPlayerController::OnHotkey_F3()
+{
+	if (UDominionPoliticalEstatesSystem* Estates = GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>())
+	{
+		Estates->EnactEdict(EDominionEdictType::ImperialBreadDole);
+	}
+}
+
+void ADominionRTSPlayerController::OnHotkey_F4()
+{
+	if (UDominionPoliticalEstatesSystem* Estates = GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>())
+	{
+		Estates->EnactEdict(EDominionEdictType::GladiatorCircus);
+	}
+}
+
+void ADominionRTSPlayerController::OnHotkey_E()
+{
+	// Cycle/Enact Next Edict
+	static int32 EdictCycle = 0;
+	if (UDominionPoliticalEstatesSystem* Estates = GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>())
+	{
+		Estates->EnactEdict((EDominionEdictType)(EdictCycle % 4));
+		EdictCycle++;
 	}
 }

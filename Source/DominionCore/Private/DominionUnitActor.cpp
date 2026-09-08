@@ -1,5 +1,6 @@
 #include "DominionUnitActor.h"
 #include "DominionFormationSystem.h"
+#include "DominionPoliticalEstatesSystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -314,6 +315,21 @@ void ADominionUnitActor::Tick(float DeltaTime)
 			FString StarveStr = FString::Printf(TEXT("[!] STARVING (%d%% MORALE) | HP: %d"), FMath::RoundToInt(Morale), FMath::RoundToInt(Health));
 			OverheadStatusText->SetText(FText::FromString(StarveStr));
 			OverheadStatusText->SetTextRenderColor(FColor(255, 80, 20));
+		}
+	}
+	else if (TeamID == 0 && UnitType != EDominionUnitType::OxCartSupply)
+	{
+		// Hope & Estates Morale Modulation (Player Army)
+		if (UDominionPoliticalEstatesSystem* Estates = GetWorld() ? GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>() : nullptr)
+		{
+			if (Estates->GetHope() > 70.0f)
+			{
+				Morale = FMath::Min(100.0f, Morale + (1.2f * DeltaTime)); // High Hope Morale Boost
+			}
+			else if (Estates->GetHope() < 20.0f)
+			{
+				Morale = FMath::Max(15.0f, Morale - (2.0f * DeltaTime)); // Imperial Despair decay
+			}
 		}
 	}
 
