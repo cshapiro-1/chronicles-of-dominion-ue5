@@ -5,43 +5,29 @@
 
 ## 1. Project Identity & Vision
 * **Title**: *Chronicles of Dominion: Bronze to Steam*
-* **Core Genre**: AAA Grand Strategy & Real-Time Tactical Civilization Simulation (*Age of Empires II* combat + *Manor Lords* physical logistics/organic city building + *Victoria 3* demographics and geopolitical estate leverage).
-* **Scale**: Colossal fantasy-realism (*Elden Ring / Dark Souls / Game of Thrones* magnitude: 80m–100m tall fortifications, 100-man mass legions, panoramic 160,000 unit orbital camera).
-* **Architectural Evolution (4 Eras)**:
-  1. Primitive Earth & Mud / Megalithic
-  2. Angkor Wat Hewn Sandstone (Lotus-bud Prang Spires)
-  3. Dark Evil Gothic (Monolithic Obsidian, Needle Spires, Spiky Buttresses)
-  4. Victorian Industrial Grimdark (Smokestacks, Cast-Iron Plating, Steam Valves)
+* **Core Genre**: AAA Grand Strategy & Real-Time Tactical RTS Civilization Simulation (*AoE2* mass combat + *Manor Lords* physical logistics + *Frostpunk* Hope/Discontent & Moral Edicts + 3-Estate Power Triad).
+* **POV**: The Imperial Sovereign managing the volatile triad of **The High Priesthood**, **The Warlord Nobility**, and **The Common Masses** while waging real-time continental conquest.
+* **Scale**: Colossal fantasy-realism (*Elden Ring / GoT* magnitude: 80m–100m tall fortifications, 100-man mass legions, panoramic 160,000 unit orbital camera).
+* **4 Architectural Eras**: Primitive Megalithic Mud $\rightarrow$ Angkor Wat Sandstone $\rightarrow$ Dark Gothic Monoliths $\rightarrow$ Victorian Industrial Grimdark.
 
 ---
 
-## 2. Core Director Principles & Rules of Engagement
-
-1. **Short, Verifiable Vertical Slices**:
-   - Never attempt monolithic system overhauls. Build focused, functional vertical slices with clear acceptance criteria.
-   - Example: *"Implement physical ox-cart baggage supply lines on one test map with visual debug and starvation attrition, then verify with automated playtest."*
-
-2. **Required Artifacts on Every Task**:
-   - Clean C++ code diffs complying with Unreal Engine 5.8 standards.
-   - Build log confirming compilation with zero errors (`Result: Succeeded`).
-   - In-game verification report (what works, controls tested, performance FPS).
-   - "What Still Fails / Next Steps" itemized punch list.
-
-3. **The Director Plays the Game**:
-   - The user's direct gameplay experience is the primary quality gate. Controls must be immediate, snappy, and bug-free (WASD 8-way pan, Q/E rotate, mouse wheel zoom, marquee select, right-click move/attack).
-
-4. **Performance Targets & Non-Negotiables**:
-   - **Target FPS**: Stable 60+ FPS with 500–2,000+ active units on screen.
-   - **No Game-Breaking Regressions**: Existing working features (camera zoom, unit movement, HUD rendering) must remain operational across all commits.
-   - **"Do Not Touch" Core Layer**: Keep core simulation logic modular in UWorldSubsystems (`DominionFormationSystem`, `DominionLogisticsSubsystem`, `DominionSupplyLineSubsystem`, `DominionDemographicsSubsystem`, `DominionGeopoliticalAISubsystem`).
+## 2. Standing Instructions for Autonomous Development
+1. **Strict Closed-Loop Mode**: One feature/vertical slice at a time.
+2. **Deterministic Quality Gate**:
+   - Clean UBT build (`unreal_build_project` returns `Result: Succeeded` with 0 errors).
+   - Passed automated verification via MCP (`unreal_call_function`, `unreal_get_property`, etc.).
+   - Comprehensive completion report with evidence.
+3. **Preserve All Working Systems**: Camera rig, WASD navigation, marquee selection, formation slots, baggage supply lines, and HUD must remain 100% operational across all commits.
+4. **Hardware Reality**: RTX 5060 8 GB VRAM. Zero local LLM inference while editor is running. Native modular C++ WorldSubsystems.
 
 ---
 
-## 3. Active Phase & Priority Focus
-
-### Current Phase: **Phase 0 → Phase 1 (Personal Playable Core Loop)**
-* **Current Top Priorities**:
-  1. **100-Man Cohort Cohesion**: Keep tight 10x10 formation fidelity during dynamic rotation and path navigation.
-  2. **Tactical Combat Feedback**: Impact visual traces, spear thrust combat cycles, and shield-wall bracing reflection against charges.
-  3. **Physical Supply Line Baggage Train**: Connect marching cohorts to granary buffers with visual ox-carts and active attrition triggers.
-  4. **4-Era Visual Morphing**: Polish dynamic material and silhouette transitions for buildings and fortifications.
+## 3. Progressive Backlog & Priority Order
+1. ✅ **100-Man Cohort Formation Marching Cohesion** (Phalanx, Wedge, Skirmish, Square)
+2. ✅ **Physical Ox-Cart Supply Lines & Starvation Attrition** (Proximity tether, decay, routing panic, `[T]` toggle)
+3. 🎯 **Basic Combat Feedback & Spear Bracing Physics** (NEXT VERTICAL SLICE):
+   - Phalanx spear bracing reflection damage against cavalry/chariot shock charges.
+   - Melee thrust attack cycles, hit-stop impact feedback, blood/sparks particle traces, and shield block reflections.
+4. ⏳ **The 3-Estate Power Triad & Hope/Discontent System** (Priesthood, Nobility, Masses gauges, unrest triggers, and Edict Lawbook).
+5. ⏳ **Conquest MVP Victory Loop** (Keep destruction & Hegemonic Tributary Subjugation).
