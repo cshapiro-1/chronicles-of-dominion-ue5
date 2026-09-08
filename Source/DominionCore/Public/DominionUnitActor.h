@@ -60,9 +60,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")
 	void AttackTarget(ADominionUnitActor* Target);
 
-	/** Apply damage with armor and shield wall mitigation */
+	/** Apply damage with directional shield blocking, armor, and bracing reflection */
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")
-	void TakeCombatDamage(float DamageAmount, float ArmorPiercing);
+	void TakeCombatDamage(float DamageAmount, float ArmorPiercing, ADominionUnitActor* Attacker = nullptr, FVector HitDirection = FVector::ZeroVector);
 
 	/** Update Starvation & Attrition state */
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")

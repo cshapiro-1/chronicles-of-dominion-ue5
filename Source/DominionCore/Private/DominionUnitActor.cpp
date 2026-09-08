@@ -1,9 +1,11 @@
 #include "DominionUnitActor.h"
+#include "DominionFormationSystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/Engine.h"
+#include "DrawDebugHelpers.h"
 
 ADominionUnitActor::ADominionUnitActor()
 {
@@ -400,7 +402,7 @@ void ADominionUnitActor::Tick(float DeltaTime)
 	if (CurrentTargetUnit && IsValid(CurrentTargetUnit))
 	{
 		float DistToTarget = FVector::Dist(GetActorLocation(), CurrentTargetUnit->GetActorLocation());
-		if (DistToTarget <= 240.0f)
+		if (DistToTarget <= 260.0f)
 		{
 			AttackCooldownTimer -= DeltaTime;
 
@@ -411,11 +413,11 @@ void ADominionUnitActor::Tick(float DeltaTime)
 				float ThrustOffset = 0.0f;
 				if (AttackCooldownTimer > 0.8f)
 				{
-					ThrustOffset = (1.2f - AttackCooldownTimer) / 0.4f * 40.0f;
+					ThrustOffset = (1.2f - AttackCooldownTimer) / 0.4f * 45.0f;
 				}
 				else if (AttackCooldownTimer > 0.5f)
 				{
-					ThrustOffset = (AttackCooldownTimer - 0.5f) / 0.3f * 40.0f;
+					ThrustOffset = (AttackCooldownTimer - 0.5f) / 0.3f * 45.0f;
 				}
 				WeaponMesh->SetRelativeLocation(FVector(20.0f + ThrustOffset, 28.0f, 25.0f));
 				WeaponMesh->SetRelativeRotation(FRotator(4.0f, 0.0f, 0.0f)); // Level thrust
@@ -423,7 +425,8 @@ void ADominionUnitActor::Tick(float DeltaTime)
 
 			if (AttackCooldownTimer <= 0.0f)
 			{
-				CurrentTargetUnit->TakeCombatDamage(AttackPower, 5.0f);
+				FVector AttackDir = (CurrentTargetUnit->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+				CurrentTargetUnit->TakeCombatDamage(AttackPower, 5.0f, this, AttackDir);
 				AttackCooldownTimer = 1.2f; // Attack interval
 				CombatState = EDominionCombatState::InCombat;
 			}
@@ -461,16 +464,100 @@ void ADominionUnitActor::AttackTarget(ADominionUnitActor* Target)
 	}
 }
 
-void ADominionUnitActor::TakeCombatDamage(float DamageAmount, float ArmorPiercing)
+void ADominionUnitActor::TakeCombatDamage(float DamageAmount, float ArmorPiercing, ADominionUnitActor* Attacker, FVector HitDirection)
 {
+	if (HitDirection.IsNearlyZero() && Attacker && IsValid(Attacker))
+	{
+		HitDirection = (GetActorLocation() - Attacker->GetActorLocation()).GetSafeNormal();
+	}
+
+	// 1. Directional Shield Blocking Analysis
+	float FrontDot = 0.0f;
+	if (!HitDirection.IsNearlyZero())
+	{
+		FrontDot = FVector::DotProduct(GetActorForwardVector(), -HitDirection);
+	}
+
+	bool bBlocked = false;
+	bool bRearFlankCrit = false;
+
+	if (FrontDot > 0.35f)
+	{
+		// Frontal Attack into Shield
+		if (bInShieldWall || UnitType == EDominionUnitType::BronzeSpearman)
+		{
+			DamageAmount *= 0.25f; // 75% Damage Reduction from Shield Wall!
+			bBlocked = true;
+		}
+	}
+	else if (FrontDot < -0.35f)
+	{
+		// Rear Flank Critical Attack (Shield bypassed)
+		DamageAmount *= 1.50f; // +50% Critical Damage on exposed rear
+		bRearFlankCrit = true;
+	}
+
+	// 2. Spear Bracing Reflection Physics vs Charging Cavalry / Chariots
+	if (bInShieldWall && FrontDot > 0.40f && Attacker && IsValid(Attacker))
+	{
+		// If attacker is a Chariot or high-speed charging attacker
+		if (Attacker->UnitType == EDominionUnitType::HeavyChariot || Attacker->MoveSpeed > 300.0f)
+		{
+			float ReflectedDmg = FMath::Clamp(Attacker->MoveSpeed * 0.18f + 40.0f, 40.0f, 150.0f);
+			Attacker->TakeCombatDamage(ReflectedDmg, 15.0f, this, -HitDirection);
+
+			if (OverheadStatusText)
+			{
+				OverheadStatusText->SetVisibility(true);
+				OverheadStatusText->SetText(FText::FromString(FString::Printf(TEXT("[BRACED SPEAR REFLECT: %.0f DMG]"), ReflectedDmg)));
+				OverheadStatusText->SetTextRenderColor(FColor(0, 255, 255));
+			}
+
+			if (UWorld* World = GetWorld())
+			{
+				DrawDebugLine(World, GetActorLocation() + FVector(0,0,60), Attacker->GetActorLocation() + FVector(0,0,60), FColor::Cyan, false, 0.6f, 0, 4.0f);
+			}
+		}
+	}
+
+	// 3. Armor Mitigation
 	float EffectiveArmor = FMath::Max(0.0f, Armor - ArmorPiercing);
 	if (bInShieldWall)
 	{
 		EffectiveArmor += 8.0f; // Phalanx Shield Wall defense bonus
 	}
 
-	float MitigatedDamage = FMath::Max(5.0f, DamageAmount - (EffectiveArmor * 0.75f));
+	float MitigatedDamage = FMath::Max(3.0f, DamageAmount - (EffectiveArmor * 0.75f));
 	Health -= MitigatedDamage;
+
+	// 4. Combat Feedback Traces & Overhead Text
+	if (UWorld* World = GetWorld())
+	{
+		FColor SparkCol = bBlocked ? FColor::Yellow : (bRearFlankCrit ? FColor::Orange : FColor::Red);
+		DrawDebugPoint(World, GetActorLocation() + FVector(0.0f, 0.0f, 60.0f), 12.0f, SparkCol, false, 0.4f);
+	}
+
+	if (OverheadStatusText && !bIsStarving)
+	{
+		OverheadStatusText->SetVisibility(true);
+		FString StatusStr;
+		if (bBlocked)
+		{
+			StatusStr = FString::Printf(TEXT("[BLOCKED! -75%%] -%.0f HP (%d/%d)"), MitigatedDamage, FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
+			OverheadStatusText->SetTextRenderColor(FColor(255, 215, 0));
+		}
+		else if (bRearFlankCrit)
+		{
+			StatusStr = FString::Printf(TEXT("[FLANK CRIT! +50%%] -%.0f HP (%d/%d)"), MitigatedDamage, FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
+			OverheadStatusText->SetTextRenderColor(FColor(255, 60, 20));
+		}
+		else
+		{
+			StatusStr = FString::Printf(TEXT("-%.0f HP (%d/%d)"), MitigatedDamage, FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
+			OverheadStatusText->SetTextRenderColor(FColor(255, 80, 80));
+		}
+		OverheadStatusText->SetText(FText::FromString(StatusStr));
+	}
 
 	if (Health <= 0.0f)
 	{

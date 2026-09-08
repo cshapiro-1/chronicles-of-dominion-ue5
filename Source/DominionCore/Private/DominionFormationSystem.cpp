@@ -172,6 +172,27 @@ float UDominionFormationSystem::CalculateShieldCoverageBonus(const FVector& Atta
     return 1.0f; // Unshielded
 }
 
+float UDominionFormationSystem::CalculateBracingReflectionMultiplier(bool bDefenderBraced, const FVector& AttackerVelocity, const FVector& DefenderForward) const
+{
+    if (!bDefenderBraced)
+    {
+        return 0.0f;
+    }
+
+    FVector NormVel = AttackerVelocity.GetSafeNormal2D();
+    FVector NormFacing = DefenderForward.GetSafeNormal2D();
+
+    // Dot product: frontal collision when charger moves directly into braced spearmen facing
+    float FrontalDot = FVector::DotProduct(NormFacing, -NormVel);
+    if (FrontalDot > 0.45f) // Frontal 90 degree cone
+    {
+        float SpeedFactor = FMath::Clamp(AttackerVelocity.Size2D() / 400.0f, 0.5f, 2.0f);
+        return 0.70f * SpeedFactor; // 70% to 140% reflection damage based on impact velocity
+    }
+
+    return 0.0f;
+}
+
 void UDominionFormationSystem::ProcessRoutingEvent(int32 RoutingFormationID)
 {
     if (const FFormationData* RoutingData = ActiveFormations.Find(RoutingFormationID))

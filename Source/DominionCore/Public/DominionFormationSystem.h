@@ -129,6 +129,10 @@ public:
     UFUNCTION(BlueprintPure, Category = "Dominion|PhysicsCombat")
     float CalculateShieldCoverageBonus(const FVector& AttackDirection, const FVector& DefenderForward, float ShieldCoverageAngle) const;
 
+    /** Calculate reflection damage multiplier when cavalry charges into a braced Phalanx */
+    UFUNCTION(BlueprintPure, Category = "Dominion|PhysicsCombat")
+    float CalculateBracingReflectionMultiplier(bool bDefenderBraced, const FVector& AttackerVelocity, const FVector& DefenderForward) const;
+
     // Morale & Psychological Cascade
     UFUNCTION(BlueprintCallable, Category = "Dominion|Morale")
     void ProcessRoutingEvent(int32 RoutingFormationID);

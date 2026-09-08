@@ -18,7 +18,7 @@ void UDominionMassCombatProcessor::ConfigureQueries(const TSharedRef<FMassEntity
 
 void UDominionMassCombatProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-    PhalanxCombatQuery.ForEachEntityChunk(EntityManager, Context, [](FMassExecutionContext& ChunkContext)
+    PhalanxCombatQuery.ForEachEntityChunk(Context, [](FMassExecutionContext& ChunkContext)
     {
         const int32 NumEntities = ChunkContext.GetNumEntities();
         TArrayView<FTransformFragment> Transforms = ChunkContext.GetMutableFragmentView<FTransformFragment>();
