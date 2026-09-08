@@ -59,11 +59,20 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Dominion|HUD")
     void ToggleProductionLedger() { bShowProductionLedger = !bShowProductionLedger; }
 
+    UFUNCTION(BlueprintCallable, Category = "Dominion|HUD")
+    void SetActiveLedgerTab(int32 TabIndex) { ActiveLedgerTab = FMath::Clamp(TabIndex, 0, 3); }
+
+    UFUNCTION(BlueprintCallable, Category = "Dominion|HUD")
+    void NextLedgerTab() { ActiveLedgerTab = (ActiveLedgerTab + 1) % 4; }
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|HUD")
     bool bShowTutorialCard = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|HUD")
     bool bShowProductionLedger = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|HUD")
+    int32 ActiveLedgerTab = 1; // 0 = Production Flow, 1 = Necessities & Living, 2 = Demographics, 3 = Trade & Logistics
 
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "HUD Colors")

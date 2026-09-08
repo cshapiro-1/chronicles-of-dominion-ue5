@@ -163,11 +163,11 @@ void ADominionRTSHUD::DrawHUD()
 	DrawShadowText(MediumFont, TEXT("BRONZE AGE"), EpochX + 10.0f, 12.0f, 0.88f, FLinearColor(1.0f, 0.88f, 0.40f, 1.0f));
 	DrawShadowText(DefaultFont, TEXT("[L] LEDGER"), EpochX + 112.0f, 16.0f, 0.78f, FLinearColor(0.45f, 0.85f, 1.0f));
 
-	// --- EXPANDED OPTION 4: PRODUCTION LEDGER DRAWER PANEL ---
+	// --- EXPANDED OPTION 4: MULTI-TAB IMPERIAL MANAGEMENT LEDGER DRAWER ---
 	if (bShowProductionLedger)
 	{
-		const float DrawerW = 620.0f;
-		const float DrawerH = 210.0f;
+		const float DrawerW = 680.0f;
+		const float DrawerH = 240.0f;
 		const float DrawerX = 14.0f;
 		const float DrawerY = TopBarH + 6.0f;
 
@@ -181,27 +181,96 @@ void ADominionRTSHUD::DrawHUD()
 		DrawerBorder.LineThickness = 2.5f;
 		Canvas->DrawItem(DrawerBorder);
 
-		// Drawer Header
-		DrawShadowText(MediumFont, TEXT("▼ PRODUCTION LEDGER & SUPPLY CHAINS"), DrawerX + 16.0f, DrawerY + 12.0f, 0.92f, FLinearColor(0.20f, 0.12f, 0.05f));
-		DrawShadowText(DefaultFont, TEXT("[Press L to Close]"), DrawerX + DrawerW - 120.0f, DrawerY + 14.0f, 0.75f, FLinearColor(0.45f, 0.20f, 0.10f));
+		// Ledger Title & Close Reminder
+		DrawShadowText(MediumFont, TEXT("📜 IMPERIAL MANAGEMENT LEDGER"), DrawerX + 16.0f, DrawerY + 10.0f, 0.92f, FLinearColor(0.20f, 0.12f, 0.05f));
+		DrawShadowText(DefaultFont, TEXT("[Press L to Toggle  •  Click/Tab to Switch]"), DrawerX + DrawerW - 240.0f, DrawerY + 12.0f, 0.74f, FLinearColor(0.45f, 0.20f, 0.10f));
 
-		// Supply Chain 1: Sustenance Pipeline
-		const float Line1Y = DrawerY + 44.0f;
-		FCanvasBoxItem Box1(FVector2D(DrawerX + 14.0f, Line1Y), FVector2D(DrawerW - 28.0f, 68.0f));
-		Box1.SetColor(FLinearColor(0.65f, 0.55f, 0.40f, 0.6f));
-		Canvas->DrawItem(Box1);
+		// --- LEDGER TABS ROW ---
+		struct FLedgerTab { const TCHAR* Name; int32 Index; };
+		const FLedgerTab Tabs[] = {
+			{ TEXT("Production"), 0 },
+			{ TEXT("Necessities & Living"), 1 },
+			{ TEXT("Demographics"), 2 },
+			{ TEXT("Trade & Logistics"), 3 }
+		};
 
-		DrawShadowText(DefaultFont, TEXT("🌾 GRAIN (1,420)  ➔  🍞 FLOUR & BREAD (850)  ➔  📦 ARMY RATIONS (42 Days)"), DrawerX + 24.0f, Line1Y + 12.0f, 0.85f, FLinearColor(0.18f, 0.12f, 0.05f));
-		DrawShadowText(DefaultFont, TEXT("Harvest: +45/min  •  Milling: 22/min  •  Consumption: 38/min (Net Surplus: +7/m)"), DrawerX + 24.0f, Line1Y + 38.0f, 0.78f, FLinearColor(0.10f, 0.45f, 0.15f));
+		const float TabStartX = DrawerX + 14.0f;
+		const float TabY = DrawerY + 34.0f;
+		const float TabW = 158.0f;
+		const float TabH = 24.0f;
 
-		// Supply Chain 2: Metallurgy Pipeline
-		const float Line2Y = DrawerY + 124.0f;
-		FCanvasBoxItem Box2(FVector2D(DrawerX + 14.0f, Line2Y), FVector2D(DrawerW - 28.0f, 68.0f));
-		Box2.SetColor(FLinearColor(0.65f, 0.55f, 0.40f, 0.6f));
-		Canvas->DrawItem(Box2);
+		for (int32 t = 0; t < 4; ++t)
+		{
+			bool bIsActive = (ActiveLedgerTab == Tabs[t].Index);
+			FLinearColor TabBGColor = bIsActive ? FLinearColor(0.20f, 0.15f, 0.10f, 0.95f) : FLinearColor(0.72f, 0.64f, 0.50f, 0.85f);
+			FLinearColor TabTextColor = bIsActive ? FLinearColor(1.0f, 0.88f, 0.40f) : FLinearColor(0.25f, 0.18f, 0.10f);
 
-		DrawShadowText(DefaultFont, TEXT("⛏️ COPPER/TIN (920)  ➔  🔥 BRONZE INGOTS (650)  ➔  ⚔️ WEAPONS & ARMOR (450)"), DrawerX + 24.0f, Line2Y + 12.0f, 0.85f, FLinearColor(0.18f, 0.12f, 0.05f));
-		DrawShadowText(DefaultFont, TEXT("Mining: +24/min  •  Smelting: 16/min  •  Armory Output: 10/min (Equips 20 Hoplites/m)"), DrawerX + 24.0f, Line2Y + 38.0f, 0.78f, FLinearColor(0.55f, 0.30f, 0.05f));
+			FCanvasTileItem TabBG(FVector2D(TabStartX + t * (TabW + 4.0f), TabY), FVector2D(TabW, TabH), TabBGColor);
+			Canvas->DrawItem(TabBG);
+
+			FCanvasBoxItem TabBorder(FVector2D(TabStartX + t * (TabW + 4.0f), TabY), FVector2D(TabW, TabH));
+			TabBorder.SetColor(bIsActive ? FLinearColor(0.85f, 0.65f, 0.22f) : FLinearColor(0.50f, 0.40f, 0.30f));
+			Canvas->DrawItem(TabBorder);
+
+			DrawShadowText(DefaultFont, Tabs[t].Name, TabStartX + t * (TabW + 4.0f) + 10.0f, TabY + 5.0f, 0.78f, TabTextColor);
+		}
+
+		// --- TAB CONTENT AREA ---
+		const float ContentY = TabY + TabH + 8.0f;
+		const float ContentW = DrawerW - 28.0f;
+		const float ContentH = DrawerH - (ContentY - DrawerY) - 10.0f;
+
+		FCanvasBoxItem ContentBox(FVector2D(DrawerX + 14.0f, ContentY), FVector2D(ContentW, ContentH));
+		ContentBox.SetColor(FLinearColor(0.60f, 0.50f, 0.35f, 0.7f));
+		Canvas->DrawItem(ContentBox);
+
+		if (ActiveLedgerTab == 1)
+		{
+			// === TAB 1: NECESSITIES OF LIVING & PUBLIC HEALTH ===
+			// Column 1 (Left): Water & Shelter
+			DrawShadowText(DefaultFont, TEXT("💧 (1) FRESH WATER & CANALS: 92% COVERAGE"), DrawerX + 26.0f, ContentY + 12.0f, 0.82f, FLinearColor(0.10f, 0.30f, 0.65f));
+			DrawShadowText(DefaultFont, TEXT("• Euphrates Canal Aqueducts active  • Silt Soil Fertility: 100%"), DrawerX + 36.0f, ContentY + 30.0f, 0.75f, FLinearColor(0.18f, 0.14f, 0.08f));
+
+			DrawShadowText(DefaultFont, TEXT("🏠 (2) SHELTER & HOUSING: 88% FULFILLED"), DrawerX + 26.0f, ContentY + 56.0f, 0.82f, FLinearColor(0.55f, 0.35f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("• Mudbrick Tenements: 13.2k sheltered  • Unhoused: 450 serfs"), DrawerX + 36.0f, ContentY + 74.0f, 0.75f, FLinearColor(0.18f, 0.14f, 0.08f));
+
+			DrawShadowText(DefaultFont, TEXT("🪵 (4) WINTER FUEL & FIREWOOD: 180 DAYS STOCK"), DrawerX + 26.0f, ContentY + 100.0f, 0.82f, FLinearColor(0.45f, 0.25f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("• Hearth timber buffer secure for winter frost"), DrawerX + 36.0f, ContentY + 118.0f, 0.75f, FLinearColor(0.10f, 0.45f, 0.15f));
+
+			// Column 2 (Right): Sanitation & Public Health
+			const float Col2X = DrawerX + 355.0f;
+			DrawShadowText(DefaultFont, TEXT("🪣 (3) SANITATION & DRAINAGE: 74%"), Col2X, ContentY + 12.0f, 0.82f, FLinearColor(0.20f, 0.45f, 0.20f));
+			DrawShadowText(DefaultFont, TEXT("• City drainage ditches clear  • Corpse Plague Risk: 8% (Low)"), Col2X + 10.0f, ContentY + 30.0f, 0.75f, FLinearColor(0.18f, 0.14f, 0.08f));
+
+			DrawShadowText(DefaultFont, TEXT("⚕️ (5) PUBLIC HEALTH & MIDWIFERY"), Col2X, ContentY + 56.0f, 0.82f, FLinearColor(0.60f, 0.15f, 0.15f));
+			DrawShadowText(DefaultFont, TEXT("• Infant Mortality: 38 / 1,000 live births (Apothecary Tier 1)"), Col2X + 10.0f, ContentY + 74.0f, 0.75f, FLinearColor(0.18f, 0.14f, 0.08f));
+
+			DrawShadowText(DefaultFont, TEXT("🌿 DIETARY DIVERSITY: GRAIN, DATES & FISH"), Col2X, ContentY + 100.0f, 0.82f, FLinearColor(0.15f, 0.45f, 0.30f));
+			DrawShadowText(DefaultFont, TEXT("• Scurvy Prevention: 95%  • Population Growth: +2.4%/yr"), Col2X + 10.0f, ContentY + 118.0f, 0.75f, FLinearColor(0.10f, 0.45f, 0.15f));
+		}
+		else if (ActiveLedgerTab == 0)
+		{
+			// === TAB 0: PRODUCTION & INDUSTRY FLOW ===
+			DrawShadowText(DefaultFont, TEXT("🌾 GRAIN (1,420)  ➔  🍞 FLOUR & BREAD (850)  ➔  📦 ARMY RATIONS (42 Days)"), DrawerX + 24.0f, ContentY + 18.0f, 0.84f, FLinearColor(0.18f, 0.12f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("Harvest: +45/min  •  Milling: 22/min  •  Consumption: 38/min (Net Surplus: +7/m)"), DrawerX + 24.0f, ContentY + 40.0f, 0.76f, FLinearColor(0.10f, 0.45f, 0.15f));
+
+			DrawShadowText(DefaultFont, TEXT("⛏️ COPPER/TIN (920)  ➔  🔥 BRONZE INGOTS (650)  ➔  ⚔️ WEAPONS & ARMOR (450)"), DrawerX + 24.0f, ContentY + 74.0f, 0.84f, FLinearColor(0.18f, 0.12f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("Mining: +24/min  •  Smelting: 16/min  •  Armory Output: 10/min (Equips 20 Hoplites/m)"), DrawerX + 24.0f, ContentY + 96.0f, 0.76f, FLinearColor(0.55f, 0.30f, 0.05f));
+		}
+		else if (ActiveLedgerTab == 2)
+		{
+			// === TAB 2: DEMOGRAPHICS & SOCIAL STRATA ===
+			DrawShadowText(DefaultFont, TEXT("🏛️ SOCIAL CLASSES: Patrician Nobles: 300 | Guild Artisans: 1.2k | Serfs: 12k | Captives: 1.5k"), DrawerX + 24.0f, ContentY + 18.0f, 0.80f, FLinearColor(0.18f, 0.12f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("👶 AGE PYRAMID: Infants: 3,500 | Apprentices: 4,200 | Prime Laborers & Soldiers: 6,500 | Elders: 800"), DrawerX + 24.0f, ContentY + 48.0f, 0.80f, FLinearColor(0.18f, 0.12f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("📜 MIGRATION LAW: City Air Makes You Free (1 Year & 1 Day Resettlement)"), DrawerX + 24.0f, ContentY + 78.0f, 0.80f, FLinearColor(0.10f, 0.40f, 0.60f));
+		}
+		else
+		{
+			// === TAB 3: TRADE & LOGISTICS ===
+			DrawShadowText(DefaultFont, TEXT("📦 BAGGAGE TRAIN NETWORK: 100% Efficiency (Active Ox-Cart Routes: 4)"), DrawerX + 24.0f, ContentY + 18.0f, 0.82f, FLinearColor(0.18f, 0.12f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("🚢 EUPHRATES RIVER DOCKS: 2 Cargo Barges active (+60t timber & grain freight capacity)"), DrawerX + 24.0f, ContentY + 48.0f, 0.80f, FLinearColor(0.10f, 0.35f, 0.60f));
+			DrawShadowText(DefaultFont, TEXT("🏛️ PROVINCIAL DIRECTIVE: Maintain 60 Days Food Buffer in Citadel Granary"), DrawerX + 24.0f, ContentY + 78.0f, 0.80f, FLinearColor(0.10f, 0.45f, 0.15f));
+		}
 	}
 
 	// Active Imperial Edict Banner under Top Header
