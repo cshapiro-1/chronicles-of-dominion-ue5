@@ -4,6 +4,8 @@
 #include "DominionRTSHUD.h"
 #include "DominionUnitActor.h"
 #include "DominionBuildingActor.h"
+#include "DominionEnvironmentVolume.h"
+#include "DominionTextureFactory.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/PointLightComponent.h"
 #include "Engine/World.h"
@@ -57,11 +59,27 @@ void ADominionGameModeBase::StartPlay()
 		}
 	}
 
+	// --- 0. Spawn Atmospheric & Volumetric Lighting Environment Volume ---
+	ADominionEnvironmentVolume* EnvVolume = World->SpawnActor<ADominionEnvironmentVolume>(
+		ADominionEnvironmentVolume::StaticClass(),
+		FVector(0.0f, 0.0f, 0.0f),
+		FRotator::ZeroRotator,
+		SpawnParams
+	);
+
 	// Load basic shape meshes for environmental terrain geometry
 	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	UStaticMesh* CylinderMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	UStaticMesh* ConeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cone.Cone"));
 	UStaticMesh* PlaneMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
+
+	// Generate Procedural Mesopotamian PBR Textures
+	UTexture2D* SandstoneAlbedo = UDominionTextureFactory::CreateSandstoneSiltAlbedo(512, 512);
+	UTexture2D* SandstoneNormal = UDominionTextureFactory::CreateSandstoneSiltNormal(512, 512);
+	UTexture2D* WaterNormal = UDominionTextureFactory::CreateWaterWaveNormal(512, 512);
+	UTexture2D* MudbrickAlbedo = UDominionTextureFactory::CreateMudbrickAlbedo(512, 512);
+	UTexture2D* MudbrickNormal = UDominionTextureFactory::CreateMudbrickNormal(512, 512);
+	UTexture2D* CedarAlbedo = UDominionTextureFactory::CreateCedarWoodAlbedo(512, 512);
 
 	// --- 1. Euphrates Valley River Water Plane & Silt Floodplain ---
 	if (PlaneMesh)
@@ -77,8 +95,14 @@ void ADominionGameModeBase::StartPlay()
 			{
 				RiverMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.04f, 0.28f, 0.46f, 0.92f));
 				RiverMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.04f, 0.28f, 0.46f, 0.92f));
-				RiverMat->SetScalarParameterValue(TEXT("Roughness"), 0.08f);
-				RiverMat->SetScalarParameterValue(TEXT("Metallic"), 0.15f);
+				RiverMat->SetScalarParameterValue(TEXT("Roughness"), 0.04f);
+				RiverMat->SetScalarParameterValue(TEXT("Metallic"), 0.25f);
+				RiverMat->SetScalarParameterValue(TEXT("Specular"), 0.95f);
+				if (WaterNormal)
+				{
+					RiverMat->SetTextureParameterValue(TEXT("NormalMap"), WaterNormal);
+					RiverMat->SetTextureParameterValue(TEXT("Normal"), WaterNormal);
+				}
 			}
 		}
 
@@ -94,6 +118,11 @@ void ADominionGameModeBase::StartPlay()
 				OasisMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.22f, 0.44f, 0.16f)); // Lush floodplain green
 				OasisMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.22f, 0.44f, 0.16f));
 				OasisMat->SetScalarParameterValue(TEXT("Roughness"), 0.85f);
+				if (SandstoneNormal)
+				{
+					OasisMat->SetTextureParameterValue(TEXT("NormalMap"), SandstoneNormal);
+					OasisMat->SetTextureParameterValue(TEXT("Normal"), SandstoneNormal);
+				}
 			}
 		}
 
@@ -109,6 +138,17 @@ void ADominionGameModeBase::StartPlay()
 				PlazaMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.74f, 0.60f, 0.42f));
 				PlazaMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.74f, 0.60f, 0.42f));
 				PlazaMat->SetScalarParameterValue(TEXT("Roughness"), 0.90f);
+				if (SandstoneAlbedo)
+				{
+					PlazaMat->SetTextureParameterValue(TEXT("BaseColorMap"), SandstoneAlbedo);
+					PlazaMat->SetTextureParameterValue(TEXT("AlbedoMap"), SandstoneAlbedo);
+					PlazaMat->SetTextureParameterValue(TEXT("Texture"), SandstoneAlbedo);
+				}
+				if (SandstoneNormal)
+				{
+					PlazaMat->SetTextureParameterValue(TEXT("NormalMap"), SandstoneNormal);
+					PlazaMat->SetTextureParameterValue(TEXT("Normal"), SandstoneNormal);
+				}
 			}
 		}
 
@@ -124,6 +164,11 @@ void ADominionGameModeBase::StartPlay()
 				RoadMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.55f, 0.42f, 0.28f));
 				RoadMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.55f, 0.42f, 0.28f));
 				RoadMat->SetScalarParameterValue(TEXT("Roughness"), 0.85f);
+				if (MudbrickNormal)
+				{
+					RoadMat->SetTextureParameterValue(TEXT("NormalMap"), MudbrickNormal);
+					RoadMat->SetTextureParameterValue(TEXT("Normal"), MudbrickNormal);
+				}
 			}
 		}
 	}

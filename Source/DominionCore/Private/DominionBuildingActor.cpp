@@ -1,4 +1,5 @@
 #include "DominionBuildingActor.h"
+#include "DominionTextureFactory.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -253,7 +254,14 @@ void ADominionBuildingActor::SetArchitecturalStyle(EDominionArchitecturalStyle N
 
 void ADominionBuildingActor::ApplyCurrentStyleVisuals()
 {
-	auto ApplyDynMaterial = [](UStaticMeshComponent* Comp, const FLinearColor& Color, float Metallic = 0.0f, float Roughness = 0.7f)
+	static UTexture2D* MudbrickAlbedo = UDominionTextureFactory::CreateMudbrickAlbedo(512, 512);
+	static UTexture2D* MudbrickNormal = UDominionTextureFactory::CreateMudbrickNormal(512, 512);
+	static UTexture2D* SandstoneAlbedo = UDominionTextureFactory::CreateSandstoneSiltAlbedo(512, 512);
+	static UTexture2D* SandstoneNormal = UDominionTextureFactory::CreateSandstoneSiltNormal(512, 512);
+	static UTexture2D* BronzeAlbedo = UDominionTextureFactory::CreateHammeredBronzeAlbedo(512, 512);
+	static UTexture2D* BronzeNormal = UDominionTextureFactory::CreateHammeredBronzeNormal(512, 512);
+
+	auto ApplyDynMaterial = [](UStaticMeshComponent* Comp, const FLinearColor& Color, float Metallic = 0.0f, float Roughness = 0.7f, UTexture2D* AlbedoMap = nullptr, UTexture2D* NormalMap = nullptr)
 	{
 		if (Comp)
 		{
@@ -264,6 +272,17 @@ void ADominionBuildingActor::ApplyCurrentStyleVisuals()
 				DynMat->SetVectorParameterValue(TEXT("Color"), Color);
 				DynMat->SetScalarParameterValue(TEXT("Metallic"), Metallic);
 				DynMat->SetScalarParameterValue(TEXT("Roughness"), Roughness);
+				if (AlbedoMap)
+				{
+					DynMat->SetTextureParameterValue(TEXT("BaseColorMap"), AlbedoMap);
+					DynMat->SetTextureParameterValue(TEXT("AlbedoMap"), AlbedoMap);
+					DynMat->SetTextureParameterValue(TEXT("Texture"), AlbedoMap);
+				}
+				if (NormalMap)
+				{
+					DynMat->SetTextureParameterValue(TEXT("NormalMap"), NormalMap);
+					DynMat->SetTextureParameterValue(TEXT("Normal"), NormalMap);
+				}
 			}
 		}
 	};
@@ -285,19 +304,19 @@ void ADominionBuildingActor::ApplyCurrentStyleVisuals()
 		SpikeRidgeMesh1->SetVisibility(true); // Timber palisade spikes
 		SpikeRidgeMesh2->SetVisibility(true);
 
-		ApplyDynMaterial(BuildingMesh, MudClay, 0.0f, 0.90f);
-		ApplyDynMaterial(Tier2Mesh, RoughStone, 0.0f, 0.85f);
-		ApplyDynMaterial(TempleShrineMesh, MudClay, 0.0f, 0.90f);
-		ApplyDynMaterial(ShrineRoofMesh, StrawHide, 0.0f, 0.95f);
-		ApplyDynMaterial(RampMesh, MudClay, 0.0f, 0.90f);
-		ApplyDynMaterial(LeftRampMesh, RoughStone, 0.0f, 0.88f);
-		ApplyDynMaterial(RightRampMesh, RoughStone, 0.0f, 0.88f);
+		ApplyDynMaterial(BuildingMesh, MudClay, 0.0f, 0.90f, MudbrickAlbedo, MudbrickNormal);
+		ApplyDynMaterial(Tier2Mesh, RoughStone, 0.0f, 0.85f, MudbrickAlbedo, MudbrickNormal);
+		ApplyDynMaterial(TempleShrineMesh, MudClay, 0.0f, 0.90f, MudbrickAlbedo, MudbrickNormal);
+		ApplyDynMaterial(ShrineRoofMesh, StrawHide, 0.0f, 0.95f, SandstoneAlbedo, SandstoneNormal);
+		ApplyDynMaterial(RampMesh, MudClay, 0.0f, 0.90f, MudbrickAlbedo, MudbrickNormal);
+		ApplyDynMaterial(LeftRampMesh, RoughStone, 0.0f, 0.88f, MudbrickAlbedo, MudbrickNormal);
+		ApplyDynMaterial(RightRampMesh, RoughStone, 0.0f, 0.88f, MudbrickAlbedo, MudbrickNormal);
 		ApplyDynMaterial(GateArchMesh, RawTimber, 0.0f, 0.80f);
 		ApplyDynMaterial(SpikeRidgeMesh1, RawTimber, 0.0f, 0.85f);
 		ApplyDynMaterial(SpikeRidgeMesh2, RawTimber, 0.0f, 0.85f);
 		ApplyDynMaterial(BannerLeftMesh, StrawHide, 0.0f, 0.9f);
 		ApplyDynMaterial(BannerRightMesh, StrawHide, 0.0f, 0.9f);
-		ApplyDynMaterial(BrazierMesh, RoughStone, 0.0f, 0.85f);
+		ApplyDynMaterial(BrazierMesh, RoughStone, 0.0f, 0.85f, BronzeAlbedo, BronzeNormal);
 
 		if (BrazierLight)
 		{
