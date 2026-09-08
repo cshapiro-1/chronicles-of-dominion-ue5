@@ -226,23 +226,23 @@ void ADominionRTSHUD::DrawHUD()
 
 		if (ActiveLedgerTab == 1)
 		{
-			// === TAB 1: NECESSITIES OF LIVING & PUBLIC HEALTH ===
+			// === TAB: NECESSITIES OF LIVING & PUBLIC HEALTH ===
 			// Column 1 (Left): Water & Shelter
-			DrawShadowText(DefaultFont, TEXT("💧 (1) FRESH WATER & CANALS: 92% COVERAGE"), DrawerX + 26.0f, ContentY + 12.0f, 0.82f, FLinearColor(0.10f, 0.30f, 0.65f));
+			DrawShadowText(DefaultFont, TEXT("💧 FRESH WATER & CANALS: 92% COVERAGE"), DrawerX + 26.0f, ContentY + 12.0f, 0.82f, FLinearColor(0.10f, 0.30f, 0.65f));
 			DrawShadowText(DefaultFont, TEXT("• Euphrates Canal Aqueducts active  • Silt Soil Fertility: 100%"), DrawerX + 36.0f, ContentY + 30.0f, 0.75f, FLinearColor(0.18f, 0.14f, 0.08f));
 
-			DrawShadowText(DefaultFont, TEXT("🏠 (2) SHELTER & HOUSING: 88% FULFILLED"), DrawerX + 26.0f, ContentY + 56.0f, 0.82f, FLinearColor(0.55f, 0.35f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("🏠 SHELTER & HOUSING: 88% FULFILLED"), DrawerX + 26.0f, ContentY + 56.0f, 0.82f, FLinearColor(0.55f, 0.35f, 0.05f));
 			DrawShadowText(DefaultFont, TEXT("• Mudbrick Tenements: 13.2k sheltered  • Unhoused: 450 serfs"), DrawerX + 36.0f, ContentY + 74.0f, 0.75f, FLinearColor(0.18f, 0.14f, 0.08f));
 
-			DrawShadowText(DefaultFont, TEXT("🪵 (4) WINTER FUEL & FIREWOOD: 180 DAYS STOCK"), DrawerX + 26.0f, ContentY + 100.0f, 0.82f, FLinearColor(0.45f, 0.25f, 0.05f));
+			DrawShadowText(DefaultFont, TEXT("🪵 WINTER FUEL & FIREWOOD: 180 DAYS STOCK"), DrawerX + 26.0f, ContentY + 100.0f, 0.82f, FLinearColor(0.45f, 0.25f, 0.05f));
 			DrawShadowText(DefaultFont, TEXT("• Hearth timber buffer secure for winter frost"), DrawerX + 36.0f, ContentY + 118.0f, 0.75f, FLinearColor(0.10f, 0.45f, 0.15f));
 
 			// Column 2 (Right): Sanitation & Public Health
 			const float Col2X = DrawerX + 355.0f;
-			DrawShadowText(DefaultFont, TEXT("🪣 (3) SANITATION & DRAINAGE: 74%"), Col2X, ContentY + 12.0f, 0.82f, FLinearColor(0.20f, 0.45f, 0.20f));
+			DrawShadowText(DefaultFont, TEXT("🪣 SANITATION & DRAINAGE: 74%"), Col2X, ContentY + 12.0f, 0.82f, FLinearColor(0.20f, 0.45f, 0.20f));
 			DrawShadowText(DefaultFont, TEXT("• City drainage ditches clear  • Corpse Plague Risk: 8% (Low)"), Col2X + 10.0f, ContentY + 30.0f, 0.75f, FLinearColor(0.18f, 0.14f, 0.08f));
 
-			DrawShadowText(DefaultFont, TEXT("⚕️ (5) PUBLIC HEALTH & MIDWIFERY"), Col2X, ContentY + 56.0f, 0.82f, FLinearColor(0.60f, 0.15f, 0.15f));
+			DrawShadowText(DefaultFont, TEXT("⚕️ PUBLIC HEALTH & MIDWIFERY"), Col2X, ContentY + 56.0f, 0.82f, FLinearColor(0.60f, 0.15f, 0.15f));
 			DrawShadowText(DefaultFont, TEXT("• Infant Mortality: 38 / 1,000 live births (Apothecary Tier 1)"), Col2X + 10.0f, ContentY + 74.0f, 0.75f, FLinearColor(0.18f, 0.14f, 0.08f));
 
 			DrawShadowText(DefaultFont, TEXT("🌿 DIETARY DIVERSITY: GRAIN, DATES & FISH"), Col2X, ContentY + 100.0f, 0.82f, FLinearColor(0.15f, 0.45f, 0.30f));
