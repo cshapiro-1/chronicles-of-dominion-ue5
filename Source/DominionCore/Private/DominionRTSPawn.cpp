@@ -17,14 +17,14 @@ ADominionRTSPawn::ADominionRTSPawn()
     SpringArmComponent->bInheritPitch = false;
     SpringArmComponent->bInheritRoll = false;
     SpringArmComponent->bInheritYaw = true;
-    SpringArmComponent->TargetArmLength = 4500.0f;
-    SpringArmComponent->SetRelativeRotation(FRotator(-50.0f, 0.0f, 0.0f));
+    SpringArmComponent->TargetArmLength = 3600.0f;
+    SpringArmComponent->SetRelativeRotation(FRotator(-52.0f, 0.0f, 0.0f));
 
     CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("RTSCamera"));
     CameraComponent->SetupAttachment(SpringArmComponent, USpringArmComponent::SocketName);
     CameraComponent->bUsePawnControlRotation = false;
 
-    TargetArmLength = 4500.0f;
+    TargetArmLength = 3600.0f;
     TargetYaw = 0.0f;
 }
 

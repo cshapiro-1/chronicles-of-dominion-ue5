@@ -64,25 +64,25 @@ private:
 
     /** Configuration Constants */
     UPROPERTY(EditDefaultsOnly, Category = "Camera Config")
-    float MinTargetArmLength = 600.0f;
+    float MinTargetArmLength = 1200.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera Config")
-    float MaxTargetArmLength = 160000.0f; // Colossal panoramic orbit
+    float MaxTargetArmLength = 24000.0f; // Broad tactical battlefield orbit
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera Config")
-    float MinPitchAngle = -15.0f; // Low altitude eye-level tilt
+    float MinPitchAngle = -42.0f; // Crisp 42-degree isometric low-altitude angle
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera Config")
     float MaxPitchAngle = -75.0f; // High altitude top-down bird's eye
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera Config")
-    float PanSpeed = 7500.0f;
+    float PanSpeed = 6500.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera Config")
-    float ZoomSpeed = 6500.0f;
+    float ZoomSpeed = 3500.0f;
 
     UPROPERTY(EditDefaultsOnly, Category = "Camera Config")
-    float DampingFactor = 10.0f;
+    float DampingFactor = 12.0f;
 
     FVector TargetLocation;
     float TargetArmLength;
