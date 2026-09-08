@@ -5,6 +5,7 @@
 #include "DominionTutorialSubsystem.h"
 #include "DominionFormationSystem.h"
 #include "DominionSupplyLineSubsystem.h"
+#include "DominionDemographicsSubsystem.h"
 #include "DominionRTSHUD.h"
 #include "DominionPoliticalEstatesSystem.h"
 #include "Engine/World.h"
@@ -16,6 +17,7 @@ ADominionRTSPlayerController::ADominionRTSPlayerController()
 	bShowMouseCursor = true;
 	bEnableClickEvents = true;
 	bEnableMouseOverEvents = true;
+	bShouldPerformFullTickWhenPaused = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
 }
 
@@ -126,14 +128,15 @@ void ADominionRTSPlayerController::SetupInputComponent()
 		InputComponent->BindKey(EKeys::Three, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_3);
 		InputComponent->BindKey(EKeys::Four, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_4);
 
-		// Tactical Command Hotkeys (Z, X, C, V, T)
+		// Tactical Command Hotkeys (Z, X, C, V, T, Spacebar)
 		InputComponent->BindKey(EKeys::Z, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_Z);
 		InputComponent->BindKey(EKeys::X, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_X);
 		InputComponent->BindKey(EKeys::C, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_C);
 		InputComponent->BindKey(EKeys::V, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_V);
 		InputComponent->BindKey(EKeys::T, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_T);
+		InputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_Space);
 
-		// Imperial Edict Hotkeys (F1, F2, F3, F4, E)
+		// Imperial Edict Hotkeys (F1, F2, F3, F4, E, L)
 		InputComponent->BindKey(EKeys::F1, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F1);
 		InputComponent->BindKey(EKeys::F2, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F2);
 		InputComponent->BindKey(EKeys::F3, IE_Pressed, this, &ADominionRTSPlayerController::OnHotkey_F3);
@@ -524,6 +527,15 @@ void ADominionRTSPlayerController::TrainUnit(int32 UnitTypeIndex)
 {
 	if (SelectedBuilding && IsValid(SelectedBuilding))
 	{
+		int32 ManpowerCost = (UnitTypeIndex == 0) ? 100 : ((UnitTypeIndex == 1) ? 50 : 25);
+		if (UDominionDemographicsSubsystem* Demo = GetWorld()->GetSubsystem<UDominionDemographicsSubsystem>())
+		{
+			if (!Demo->DraftLevy(ManpowerCost))
+			{
+				return;
+			}
+		}
+
 		FVector SpawnLoc = SelectedBuilding->GetActorLocation() + FVector(400.0f, 0.0f, 0.0f);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
@@ -548,7 +560,8 @@ void ADominionRTSPlayerController::TrainUnit(int32 UnitTypeIndex)
 
 			if (UDominionTutorialSubsystem* Tut = GetWorld()->GetSubsystem<UDominionTutorialSubsystem>())
 			{
-				Tut->NotifyUnitRecruited(NewUnit->UnitName);
+				FString Msg = FString::Printf(TEXT("%s Levied (-%d Serfs from Rural Farmland)"), *NewUnit->UnitName, ManpowerCost);
+				Tut->NotifyUnitRecruited(Msg);
 			}
 		}
 	}
@@ -565,15 +578,22 @@ void ADominionRTSPlayerController::AdvanceToNextEpoch()
 	}
 }
 
+void ADominionRTSPlayerController::ToggleTacticalPause()
+{
+	bIsTacticalPaused = !bIsTacticalPaused;
+	UGameplayStatics::SetGamePaused(GetWorld(), bIsTacticalPaused);
+}
+
 // Tactical Hotkey Handlers
 void ADominionRTSPlayerController::OnHotkey_1() { SetSelectedUnitsFormation(0); } // [1] Phalanx Shield Wall
 void ADominionRTSPlayerController::OnHotkey_2() { SetSelectedUnitsFormation(1); } // [2] Wedge Shock Charge
 void ADominionRTSPlayerController::OnHotkey_3() { SetSelectedUnitsFormation(2); } // [3] Skirmish Dispersion
 void ADominionRTSPlayerController::OnHotkey_4() { SetSelectedUnitsFormation(3); } // [4] Square Defense
-void ADominionRTSPlayerController::OnHotkey_Z() { TrainUnit(0); }                 // [Z] Train Spearman
+void ADominionRTSPlayerController::OnHotkey_Z() { TrainUnit(0); }                 // [Z] Train Spearman (Draft 100 Serfs)
 void ADominionRTSPlayerController::OnHotkey_X() { AdvanceToNextEpoch(); }         // [X] Morph Architecture Era
-void ADominionRTSPlayerController::OnHotkey_C() { TrainUnit(1); }                 // [C] Train Chariot
-void ADominionRTSPlayerController::OnHotkey_V() { TrainUnit(2); }                 // [V] Train Baggage Train
+void ADominionRTSPlayerController::OnHotkey_C() { TrainUnit(1); }                 // [C] Train Chariot (Draft 50 Serfs)
+void ADominionRTSPlayerController::OnHotkey_V() { TrainUnit(2); }                 // [V] Train Baggage Train (Draft 25 Serfs)
+void ADominionRTSPlayerController::OnHotkey_Space() { ToggleTacticalPause(); }    // [Spacebar] Toggle Tactical Pause
 void ADominionRTSPlayerController::OnHotkey_T()
 {
 	// Toggle Supply Line Interdiction for live test of Starvation Attrition

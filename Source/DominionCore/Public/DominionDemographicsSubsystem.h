@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
@@ -38,14 +38,33 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Dominion|Demographics")
 	const FDominionAgePyramid& GetAgePyramid() const { return AgePyramid; }
 
-	/** Gets current Infant Mortality Rate per 1000 live births */
+	/** Drafts rural working-age adult population into active military cohorts */
+	UFUNCTION(BlueprintCallable, Category = "Dominion|Demographics")
+	bool DraftLevy(int32 ManpowerCount);
+
+	/** Gets current rural agricultural serf population */
 	UFUNCTION(BlueprintPure, Category = "Dominion|Demographics")
-	float GetInfantMortalityRatePerThousand() const { return InfantMortalityRate * 1000.0f; }
+	int64 GetRuralPopulation() const { return RuralPopulation; }
+
+	/** Gets current urban artisan / citizen population */
+	UFUNCTION(BlueprintPure, Category = "Dominion|Demographics")
+	int64 GetUrbanPopulation() const { return UrbanPopulation; }
+
+	/** Gets count of active drafted military cohorts */
+	UFUNCTION(BlueprintPure, Category = "Dominion|Demographics")
+	int32 GetActiveDraftedCohorts() const { return ActiveDraftedCohorts; }
+
+	/** Gets dynamic grain harvest rate factoring in active drafted serfs */
+	UFUNCTION(BlueprintPure, Category = "Dominion|Demographics")
+	float GetGrainHarvestRate() const { return FMath::Max(10.0f, 45.0f - (ActiveDraftedCohorts * 15.0f)); }
 
 	UPROPERTY(BlueprintAssignable, Category = "Dominion|Demographics")
 	FOnDemographicCrisis OnDemographicCrisis;
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Demographics")
+	int32 ActiveDraftedCohorts = 0;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Demographics")
 	FDominionAgePyramid AgePyramid;
 

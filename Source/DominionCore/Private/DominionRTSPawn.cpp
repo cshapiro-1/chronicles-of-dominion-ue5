@@ -6,6 +6,7 @@
 ADominionRTSPawn::ADominionRTSPawn()
 {
     PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bTickEvenWhenPaused = true;
     AutoPossessPlayer = EAutoReceiveInput::Player0;
 
     RootScene = CreateDefaultSubobject<USceneComponent>(TEXT("RootScene"));

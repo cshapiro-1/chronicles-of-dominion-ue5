@@ -1,4 +1,6 @@
-﻿#include "DominionDemographicsSubsystem.h"
+#include "DominionDemographicsSubsystem.h"
+#include "DominionPoliticalEstatesSystem.h"
+#include "Engine/World.h"
 
 void UDominionDemographicsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -15,6 +17,35 @@ void UDominionDemographicsSubsystem::Initialize(FSubsystemCollectionBase& Collec
 	UrbanPopulation = 3000;
 	SlumPopulation = 1200;
 	UrbanGrainDaysBuffer = 30.0f;
+	ActiveDraftedCohorts = 0;
+}
+
+bool UDominionDemographicsSubsystem::DraftLevy(int32 ManpowerCount)
+{
+	if (AgePyramid.Adults15To50 < ManpowerCount || RuralPopulation < ManpowerCount)
+	{
+		if (OnDemographicCrisis.IsBound())
+		{
+			OnDemographicCrisis.Broadcast(TEXT("MANPOWER DEPLETED"), TEXT("The rural countryside has no able-bodied adults left to draft!"));
+		}
+		return false;
+	}
+
+	AgePyramid.Adults15To50 -= ManpowerCount;
+	RuralPopulation -= ManpowerCount;
+	ActiveDraftedCohorts++;
+
+	// Political feedback: Serf conscription raises peasant discontent & reduces Commoner Loyalty
+	if (UWorld* World = GetWorld())
+	{
+		if (UDominionPoliticalEstatesSystem* Estates = World->GetSubsystem<UDominionPoliticalEstatesSystem>())
+		{
+			Estates->ModifyDiscontent(5.0f);
+			Estates->ModifyEstateLoyalty(EDominionEstateType::Masses, -4.0f);
+		}
+	}
+
+	return true;
 }
 
 void UDominionDemographicsSubsystem::ProcessDemographicsTick(float DeltaTime, float AvailableGrain, float WaterSanitation, float FirewoodStock, float DietaryDiversity, float MidwiferyTier)
@@ -57,3 +88,4 @@ void UDominionDemographicsSubsystem::SetMigrationPolicy(EDominionMigrationPolicy
 {
 	MigrationPolicy = NewPolicy;
 }
+

@@ -5,6 +5,7 @@
 #include "DominionTutorialSubsystem.h"
 #include "DominionSupplyLineSubsystem.h"
 #include "DominionFormationSystem.h"
+#include "DominionDemographicsSubsystem.h"
 #include "DominionPoliticalEstatesSystem.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
@@ -40,6 +41,10 @@ void ADominionRTSHUD::DrawHUD()
 	UFont* DefaultFont = GEngine->GetSmallFont();
 	UFont* MediumFont = GEngine->GetMediumFont() ? GEngine->GetMediumFont() : DefaultFont;
 
+	UDominionDemographicsSubsystem* Demo = GetWorld() ? GetWorld()->GetSubsystem<UDominionDemographicsSubsystem>() : nullptr;
+	float GrainRate = Demo ? Demo->GetGrainHarvestRate() : 45.0f;
+	FString SustenanceRateStr = FString::Printf(TEXT("1.4k (+%.0f/m)"), GrainRate);
+
 	// 1. Draw Top Resource & Macro-Pillar Header Bar
 	const float ScreenW = Canvas->SizeX;
 	const float ScreenH = Canvas->SizeY;
@@ -62,7 +67,7 @@ void ADominionRTSHUD::DrawHUD()
 	};
 
 	const FMacroPillar LeftPillars[] = {
-		{ TEXT("🌾 Sustenance:"), TEXT("1.4k (+45/m)"), FLinearColor(1.0f, 0.90f, 0.40f) },
+		{ TEXT("🌾 Sustenance:"), SustenanceRateStr, FLinearColor(1.0f, 0.90f, 0.40f) },
 		{ TEXT("🪵 Industry:"), TEXT("2.05k (+43/m)"), FLinearColor(0.85f, 0.70f, 0.45f) },
 		{ TEXT("⚔️ Metallurgy:"), TEXT("650 (+12/m)"), FLinearColor(0.95f, 0.65f, 0.25f) }
 	};
@@ -260,7 +265,10 @@ void ADominionRTSHUD::DrawHUD()
 		else if (ActiveLedgerTab == 2)
 		{
 			// === TAB 2: DEMOGRAPHICS & SOCIAL STRATA ===
-			DrawShadowText(DefaultFont, TEXT("🏛️ SOCIAL CLASSES: Patrician Nobles: 300 | Guild Artisans: 1.2k | Serfs: 12k | Captives: 1.5k"), DrawerX + 24.0f, ContentY + 18.0f, 0.80f, FLinearColor(0.18f, 0.12f, 0.05f));
+			int64 RuralPop = Demo ? Demo->GetRuralPopulation() : 12000;
+			int32 DraftedCohorts = Demo ? Demo->GetActiveDraftedCohorts() : 0;
+			FString SocialStr = FString::Printf(TEXT("🏛️ SOCIAL CLASSES: Patrician Nobles: 300 | Guild Artisans: 1.2k | Rural Serfs: %lld (Drafted: %d Cohorts)"), RuralPop, DraftedCohorts);
+			DrawShadowText(DefaultFont, SocialStr, DrawerX + 24.0f, ContentY + 18.0f, 0.80f, FLinearColor(0.18f, 0.12f, 0.05f));
 			DrawShadowText(DefaultFont, TEXT("👶 AGE PYRAMID: Infants: 3,500 | Apprentices: 4,200 | Prime Laborers & Soldiers: 6,500 | Elders: 800"), DrawerX + 24.0f, ContentY + 48.0f, 0.80f, FLinearColor(0.18f, 0.12f, 0.05f));
 			DrawShadowText(DefaultFont, TEXT("📜 MIGRATION LAW: City Air Makes You Free (1 Year & 1 Day Resettlement)"), DrawerX + 24.0f, ContentY + 78.0f, 0.80f, FLinearColor(0.10f, 0.40f, 0.60f));
 		}
@@ -273,9 +281,29 @@ void ADominionRTSHUD::DrawHUD()
 		}
 	}
 
-	// Active Imperial Edict Banner under Top Header
-	if (Estates && Estates->GetActiveEdictRemainingTime() > 0.0f)
+	ADominionRTSPlayerController* PC = Cast<ADominionRTSPlayerController>(GetOwningPlayerController());
+
+	// --- TACTICAL PAUSE BANNER (TOP CENTER) ---
+	if (PC && PC->IsTacticalPaused())
 	{
+		const float PauseBannerW = 680.0f;
+		const float PauseBannerH = 30.0f;
+		const float PauseBannerX = (ScreenW - PauseBannerW) * 0.5f;
+		const float PauseBannerY = TopBarH + 6.0f;
+
+		FCanvasTileItem PauseBG(FVector2D(PauseBannerX, PauseBannerY), FVector2D(PauseBannerW, PauseBannerH), FLinearColor(0.15f, 0.08f, 0.02f, 0.96f));
+		Canvas->DrawItem(PauseBG);
+
+		FCanvasBoxItem PauseBorder(FVector2D(PauseBannerX, PauseBannerY), FVector2D(PauseBannerW, PauseBannerH));
+		PauseBorder.SetColor(FLinearColor(1.0f, 0.85f, 0.20f, 1.0f));
+		PauseBorder.LineThickness = 2.0f;
+		Canvas->DrawItem(PauseBorder);
+
+		DrawShadowText(MediumFont, TEXT("⏸️ TACTICAL PAUSE — ACTIVE COMMAND QUEUEING & LEDGER INSPECTION [SPACEBAR]"), PauseBannerX + 16.0f, PauseBannerY + 6.0f, 0.86f, FLinearColor(1.0f, 0.90f, 0.30f));
+	}
+	else if (Estates && Estates->GetActiveEdictRemainingTime() > 0.0f)
+	{
+		// Active Imperial Edict Banner under Top Header
 		FString EdictMsg = FString::Printf(TEXT("[ACTIVE IMPERIAL EDICT]: %s (%.0fs remaining)"), *Estates->GetActiveEdictName(), Estates->GetActiveEdictRemainingTime());
 		const float EdictW = 640.0f;
 		const float EdictX = (ScreenW - EdictW) * 0.5f;
@@ -314,7 +342,6 @@ void ADominionRTSHUD::DrawHUD()
 	CardBorder.LineThickness = 1.8f;
 	Canvas->DrawItem(CardBorder);
 
-	ADominionRTSPlayerController* PC = Cast<ADominionRTSPlayerController>(GetOwningPlayerController());
 	if (PC && PC->GetSelectedUnits().Num() > 0)
 	{
 		ADominionUnitActor* SelUnit = PC->GetSelectedUnits()[0];
@@ -349,17 +376,33 @@ void ADominionRTSHUD::DrawHUD()
 			// Morale Bar
 			FCanvasTileItem MoraleBG(FVector2D(TextX, CardY + 59.0f), FVector2D(BarW, 9.0f), FLinearColor(0.15f, 0.15f, 0.15f));
 			Canvas->DrawItem(MoraleBG);
-			FCanvasTileItem MoraleFill(FVector2D(TextX, CardY + 59.0f), FVector2D(BarW * 0.95f, 9.0f), FLinearColor(0.2f, 0.65f, 1.0f));
+			FCanvasTileItem MoraleFill(FVector2D(TextX, CardY + 59.0f), FVector2D(BarW * (SelUnit->Morale / 100.0f), 9.0f), FLinearColor(0.2f, 0.65f, 1.0f));
 			Canvas->DrawItem(MoraleFill);
-			DrawShadowText(DefaultFont, TEXT("MORALE: 95% (Steady)"), TextX + 4.0f, CardY + 58.0f, 0.65f, FLinearColor::White);
+			DrawShadowText(DefaultFont, FString::Printf(TEXT("MORALE: %.0f%% (%s)"), SelUnit->Morale, (SelUnit->Morale > 50.0f) ? TEXT("Steady") : TEXT("Wavering")), TextX + 4.0f, CardY + 58.0f, 0.65f, FLinearColor::White);
 
 			// Stats: ATT / DEF / SPEED
-			FString StatStr = FString::Printf(TEXT("ATT: %.0f • DEF: 35 • SPD: %.0f"), SelUnit->AttackPower, SelUnit->MoveSpeed);
+			FString StatStr = FString::Printf(TEXT("ATT: %.0f • DEF: %.0f • SPD: %.0f"), SelUnit->AttackPower, SelUnit->Armor, SelUnit->MoveSpeed);
 			DrawShadowText(DefaultFont, StatStr, TextX, CardY + 76.0f, 0.78f, FLinearColor(1.0f, 0.88f, 0.45f));
 
-			// Stance & Supply Days
-			FString StanceStr = SelUnit->bInShieldWall ? TEXT("Stance: Phalanx (+40% Armor)  |  Food: 42d") : TEXT("Stance: Open Order  |  Food: 42d");
-			DrawShadowText(DefaultFont, StanceStr, TextX, CardY + 96.0f, 0.75f, FLinearColor(0.65f, 0.85f, 1.0f));
+			// Stance & Haversack Rations Status
+			FString SupplyStr;
+			FLinearColor SupplyColor;
+			if (SelUnit->bIsStarving)
+			{
+				SupplyStr = FString::Printf(TEXT("⚠️ RATIONS: 0s [STARVING! -1.5%% HP/s]"));
+				SupplyColor = FLinearColor(1.0f, 0.3f, 0.2f);
+			}
+			else if (SelUnit->bIsResupplying)
+			{
+				SupplyStr = FString::Printf(TEXT("🌾 RATIONS: %.0fs [Supplied by Baggage Cart]"), SelUnit->FieldRations);
+				SupplyColor = FLinearColor(0.4f, 1.0f, 0.5f);
+			}
+			else
+			{
+				SupplyStr = FString::Printf(TEXT("🌾 HAVERSACK: %.0fs BUFFER [3m Tactical Range]"), SelUnit->FieldRations);
+				SupplyColor = FLinearColor(1.0f, 0.85f, 0.4f);
+			}
+			DrawShadowText(DefaultFont, SupplyStr, TextX, CardY + 96.0f, 0.74f, SupplyColor);
 		}
 	}
 	else
@@ -380,9 +423,12 @@ void ADominionRTSHUD::DrawHUD()
 		DrawShadowText(MediumFont, TEXT("CITADEL OF UR-KISH"), TextX, CardY + 8.0f, 0.96f, FLinearColor(1.0f, 0.88f, 0.40f));
 		DrawShadowText(DefaultFont, TEXT("Imperial Capital (No Unit Selected)"), TextX, CardY + 28.0f, 0.78f, FLinearColor(0.75f, 0.85f, 0.95f));
 
-		DrawShadowText(DefaultFont, TEXT("Province Pop: 15,000   •   Garrison: 450 Hoplites"), TextX, CardY + 50.0f, 0.78f, FLinearColor::White);
+		int64 RuralSerfs = Demo ? Demo->GetRuralPopulation() : 12000;
+		int32 Drafted = Demo ? Demo->GetActiveDraftedCohorts() : 0;
+		FString PopStr = FString::Printf(TEXT("Rural Serfs: %lld  •  Levied Cohorts: %d"), RuralSerfs, Drafted);
+		DrawShadowText(DefaultFont, PopStr, TextX, CardY + 50.0f, 0.78f, FLinearColor::White);
 		DrawShadowText(DefaultFont, TEXT("Stability: 88% (Concordat)   •   Granary: 60 Days"), TextX, CardY + 70.0f, 0.78f, FLinearColor(0.35f, 0.95f, 0.55f));
-		DrawShadowText(DefaultFont, TEXT("[LMB] Select Legion   •   [RMB] Move/Attack"), TextX, CardY + 94.0f, 0.75f, FLinearColor(0.70f, 0.75f, 0.80f));
+		DrawShadowText(DefaultFont, TEXT("[Space] Tactical Pause  •  [LMB] Select  •  [RMB] Move"), TextX, CardY + 94.0f, 0.75f, FLinearColor(0.70f, 0.75f, 0.80f));
 	}
 
 	// --- SECTION 2 (CENTER): COMPACT COMMAND GRID (FORMATIONS & EDICTS) ---

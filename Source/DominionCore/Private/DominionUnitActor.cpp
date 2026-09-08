@@ -269,6 +269,20 @@ void ADominionUnitActor::MoveToFormationSlot(const FVector& SlotTarget, const FR
 	MoveToLocation(SlotTarget);
 }
 
+void ADominionUnitActor::ReplenishFieldRations(float Amount)
+{
+	bIsResupplying = true;
+	FieldRations = FMath::Min(MaxFieldRations, FieldRations + Amount);
+	bIsStarving = false;
+}
+
+void ADominionUnitActor::ConsumeFieldRations(float DeltaTime)
+{
+	bIsResupplying = false;
+	FieldRations = FMath::Max(0.0f, FieldRations - DeltaTime);
+	bIsStarving = (FieldRations <= 0.0f);
+}
+
 void ADominionUnitActor::SetStarvingState(bool bNewStarving)
 {
 	bIsStarving = bNewStarving;
@@ -276,8 +290,8 @@ void ADominionUnitActor::SetStarvingState(bool bNewStarving)
 	{
 		if (OverheadStatusText)
 		{
-			OverheadStatusText->SetText(FText::FromString(TEXT("[!] STARVING - ATTRITION")));
-			OverheadStatusText->SetTextRenderColor(FColor(255, 130, 40));
+			OverheadStatusText->SetText(FText::FromString(TEXT("[!] STARVING (0s RATIONS) - ATTRITION")));
+			OverheadStatusText->SetTextRenderColor(FColor(255, 100, 30));
 		}
 	}
 	else
@@ -297,41 +311,64 @@ void ADominionUnitActor::Tick(float DeltaTime)
 
 	const float WorldTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
 
-	// Starvation & Supply Line Attrition
-	if (bIsStarving && TeamID == 0 && UnitType != EDominionUnitType::OxCartSupply)
+	// Haversack Field Rations & Starvation Attrition
+	if (TeamID == 0 && UnitType != EDominionUnitType::OxCartSupply)
 	{
-		// 1. Health attrition: lose 1.5% max health per second
-		Health = FMath::Max(1.0f, Health - (MaxHealth * 0.015f * DeltaTime));
-
-		// 2. Morale decay: lose 5 morale per second
-		Morale = FMath::Clamp(Morale - (5.0f * DeltaTime), 0.0f, 100.0f);
-
-		// 3. Mutiny / Routing Panic if starved below 20 morale
-		if (Morale <= 20.0f && CombatState != EDominionCombatState::RoutingPanic)
+		if (bIsStarving)
 		{
-			CombatState = EDominionCombatState::RoutingPanic;
-			MoveSpeed = BaseMoveSpeed * 1.35f; // Scatter in panic
-		}
+			// 1. Health attrition: lose 1.5% max health per second once haversack is completely dry
+			Health = FMath::Max(1.0f, Health - (MaxHealth * 0.015f * DeltaTime));
 
-		if (OverheadStatusText)
-		{
-			FString StarveStr = FString::Printf(TEXT("[!] STARVING (%d%% MORALE) | HP: %d"), FMath::RoundToInt(Morale), FMath::RoundToInt(Health));
-			OverheadStatusText->SetText(FText::FromString(StarveStr));
-			OverheadStatusText->SetTextRenderColor(FColor(255, 80, 20));
-		}
-	}
-	else if (TeamID == 0 && UnitType != EDominionUnitType::OxCartSupply)
-	{
-		// Hope & Estates Morale Modulation (Player Army)
-		if (UDominionPoliticalEstatesSystem* Estates = GetWorld() ? GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>() : nullptr)
-		{
-			if (Estates->GetHope() > 70.0f)
+			// 2. Morale decay: lose 5 morale per second
+			Morale = FMath::Clamp(Morale - (5.0f * DeltaTime), 0.0f, 100.0f);
+
+			// 3. Mutiny / Routing Panic if starved below 20 morale
+			if (Morale <= 20.0f && CombatState != EDominionCombatState::RoutingPanic)
 			{
-				Morale = FMath::Min(100.0f, Morale + (1.2f * DeltaTime)); // High Hope Morale Boost
+				CombatState = EDominionCombatState::RoutingPanic;
+				MoveSpeed = BaseMoveSpeed * 1.35f; // Scatter in panic
 			}
-			else if (Estates->GetHope() < 20.0f)
+
+			if (OverheadStatusText)
 			{
-				Morale = FMath::Max(15.0f, Morale - (2.0f * DeltaTime)); // Imperial Despair decay
+				FString StarveStr = FString::Printf(TEXT("[!] STARVING (0s RATIONS | %d%% MORALE) | HP: %d"), FMath::RoundToInt(Morale), FMath::RoundToInt(Health));
+				OverheadStatusText->SetText(FText::FromString(StarveStr));
+				OverheadStatusText->SetTextRenderColor(FColor(255, 60, 20));
+			}
+		}
+		else
+		{
+			// Unit is operating safely on Haversack Rations or Resupplying from Baggage Train
+			if (bIsResupplying)
+			{
+				if (OverheadStatusText && CombatState != EDominionCombatState::InCombat)
+				{
+					FString SupplyStr = FString::Printf(TEXT("[SUPPLIED (CART)] Rations: %.0fs | HP: %d"), FieldRations, FMath::RoundToInt(Health));
+					OverheadStatusText->SetText(FText::FromString(SupplyStr));
+					OverheadStatusText->SetTextRenderColor(FColor(80, 255, 120));
+				}
+			}
+			else if (FieldRations < MaxFieldRations)
+			{
+				if (OverheadStatusText && CombatState != EDominionCombatState::InCombat)
+				{
+					FString BufferStr = FString::Printf(TEXT("[HAVERSACK: %.0fs BUFFER] HP: %d"), FieldRations, FMath::RoundToInt(Health));
+					OverheadStatusText->SetText(FText::FromString(BufferStr));
+					OverheadStatusText->SetTextRenderColor(FColor(255, 200, 50));
+				}
+			}
+
+			// Hope & Estates Morale Modulation (Player Army)
+			if (UDominionPoliticalEstatesSystem* Estates = GetWorld() ? GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>() : nullptr)
+			{
+				if (Estates->GetHope() > 70.0f)
+				{
+					Morale = FMath::Min(100.0f, Morale + (1.2f * DeltaTime)); // High Hope Morale Boost
+				}
+				else if (Estates->GetHope() < 20.0f)
+				{
+					Morale = FMath::Max(15.0f, Morale - (2.0f * DeltaTime)); // Imperial Despair decay
+				}
 			}
 		}
 	}

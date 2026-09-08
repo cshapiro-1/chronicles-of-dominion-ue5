@@ -44,6 +44,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Tactics")
 	void SetSelectedUnitsFormation(int32 FormationMode); // 0 = Phalanx, 1 = Wedge, 2 = Skirmish, 3 = Line
 
+	UFUNCTION(BlueprintCallable, Category = "Dominion|Tactics")
+	void ToggleTacticalPause();
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Tactics")
+	bool IsTacticalPaused() const { return bIsTacticalPaused; }
+
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Economy")
 	void TrainUnit(int32 UnitTypeIndex);
 
@@ -82,6 +88,7 @@ protected:
 	void OnHotkey_C();
 	void OnHotkey_V();
 	void OnHotkey_T();
+	void OnHotkey_Space();
 
 	// Imperial Edict Hotkeys (3-Estate Lawbook)
 	void OnHotkey_F1();
@@ -107,6 +114,7 @@ private:
 	bool bMoveBackward = false;
 	bool bMoveLeft = false;
 	bool bMoveRight = false;
+	bool bIsTacticalPaused = false;
 	int32 CurrentFormationMode = 0;
 	FVector2D LastMousePosition;
 };

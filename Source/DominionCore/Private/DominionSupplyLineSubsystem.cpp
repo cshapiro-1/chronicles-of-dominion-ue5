@@ -1,5 +1,6 @@
 #include "DominionSupplyLineSubsystem.h"
 #include "DominionUnitActor.h"
+#include "DominionBuildingActor.h"
 #include "Components/TextRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
@@ -27,13 +28,16 @@ void UDominionSupplyLineSubsystem::Tick(float DeltaTime)
     UWorld* World = GetWorld();
     if (!World) return;
 
-    // 1. Gather all friendly combat units and ox-carts
+    // 1. Gather all friendly combat units, mobile ox-carts, and supply buildings
     TArray<AActor*> AllUnitActors;
     UGameplayStatics::GetAllActorsOfClass(World, ADominionUnitActor::StaticClass(), AllUnitActors);
 
+    TArray<AActor*> AllBuildingActors;
+    UGameplayStatics::GetAllActorsOfClass(World, ADominionBuildingActor::StaticClass(), AllBuildingActors);
+
     TArray<ADominionUnitActor*> FriendlyCombatUnits;
     TArray<ADominionUnitActor*> FriendlyOxCarts;
-    FVector CohortCentroid = FVector::ZeroVector;
+    TArray<ADominionBuildingActor*> FriendlySupplyBases;
 
     for (AActor* Act : AllUnitActors)
     {
@@ -48,53 +52,80 @@ void UDominionSupplyLineSubsystem::Tick(float DeltaTime)
                 else if (Unit->UnitType == EDominionUnitType::BronzeSpearman || Unit->UnitType == EDominionUnitType::HeavyChariot)
                 {
                     FriendlyCombatUnits.Add(Unit);
-                    CohortCentroid += Unit->GetActorLocation();
                 }
             }
         }
     }
 
-    if (FriendlyCombatUnits.Num() > 0)
+    for (AActor* Act : AllBuildingActors)
     {
-        CohortCentroid /= (float)FriendlyCombatUnits.Num();
-    }
-
-    // 2. Check if active Ox-Cart is within supply tether range (2,800 cm)
-    bool bSupplyLineActive = false;
-    ADominionUnitActor* NearestOxCart = nullptr;
-    float MinCartDist = 999999.0f;
-
-    if (!bSupplyInterdictedTest && FriendlyOxCarts.Num() > 0)
-    {
-        for (ADominionUnitActor* Cart : FriendlyOxCarts)
+        if (ADominionBuildingActor* Building = Cast<ADominionBuildingActor>(Act))
         {
-            if (IsValid(Cart) && Cart->Health > 0.0f)
+            if (Building->TeamID == 0)
             {
-                float Dist = FVector::Dist2D(Cart->GetActorLocation(), CohortCentroid);
-                if (Dist < MinCartDist)
-                {
-                    MinCartDist = Dist;
-                    NearestOxCart = Cart;
-                }
+                FriendlySupplyBases.Add(Building);
             }
-        }
-
-        if (NearestOxCart && MinCartDist <= 2800.0f)
-        {
-            bSupplyLineActive = true;
         }
     }
 
-    // 3. Apply Starvation / Sustenance state to all combat units
+    // 2. Process Haversack Rations & Supply Tether per individual combat unit
     for (ADominionUnitActor* Unit : FriendlyCombatUnits)
     {
-        if (IsValid(Unit))
+        if (!IsValid(Unit)) continue;
+
+        bool bInSupplyRange = false;
+        float MinDist = 999999.0f;
+
+        if (!bSupplyInterdictedTest)
         {
-            Unit->SetStarvingState(!bSupplyLineActive);
+            // Check mobile Ox-Carts (tether radius: 2,800 cm)
+            for (ADominionUnitActor* Cart : FriendlyOxCarts)
+            {
+                if (IsValid(Cart) && Cart->Health > 0.0f)
+                {
+                    float Dist = FVector::Dist2D(Cart->GetActorLocation(), Unit->GetActorLocation());
+                    if (Dist < MinDist)
+                    {
+                        MinDist = Dist;
+                    }
+                    if (Dist <= 2800.0f)
+                    {
+                        bInSupplyRange = true;
+                        break;
+                    }
+                }
+            }
+
+            // Check static Granaries / Citadels / Marching Depots (radius: 3,500 cm)
+            if (!bInSupplyRange)
+            {
+                for (ADominionBuildingActor* Base : FriendlySupplyBases)
+                {
+                    if (IsValid(Base))
+                    {
+                        float Dist = FVector::Dist2D(Base->GetActorLocation(), Unit->GetActorLocation());
+                        if (Dist <= 3500.0f)
+                        {
+                            bInSupplyRange = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Apply 3-minute Haversack operational buffer vs. fast replenishment (+30s/s)
+        if (bInSupplyRange)
+        {
+            Unit->ReplenishFieldRations(30.0f * DeltaTime);
+        }
+        else
+        {
+            Unit->ConsumeFieldRations(DeltaTime);
         }
     }
 
-    // 4. Update Ox-Cart visual overhead status
+    // 3. Update Ox-Cart visual overhead status
     for (ADominionUnitActor* Cart : FriendlyOxCarts)
     {
         if (IsValid(Cart))
@@ -107,20 +138,12 @@ void UDominionSupplyLineSubsystem::Tick(float DeltaTime)
                     Cart->OverheadStatusText->SetTextRenderColor(FColor(255, 40, 40));
                 }
             }
-            else if (bSupplyLineActive)
-            {
-                if (Cart->OverheadStatusText)
-                {
-                    Cart->OverheadStatusText->SetText(FText::FromString(TEXT("[GRAIN SUPPLY CART: 100% - FEEDING COHORT]")));
-                    Cart->OverheadStatusText->SetTextRenderColor(FColor(50, 255, 120));
-                }
-            }
             else
             {
                 if (Cart->OverheadStatusText)
                 {
-                    Cart->OverheadStatusText->SetText(FText::FromString(TEXT("[!] CART OUT OF RANGE - COHORT STARVING!")));
-                    Cart->OverheadStatusText->SetTextRenderColor(FColor(255, 160, 30));
+                    Cart->OverheadStatusText->SetText(FText::FromString(TEXT("[GRAIN SUPPLY CART: ACTIVE — REPLENISHING RATIONS]")));
+                    Cart->OverheadStatusText->SetTextRenderColor(FColor(50, 255, 120));
                 }
             }
         }

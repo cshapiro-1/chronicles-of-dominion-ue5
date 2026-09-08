@@ -108,6 +108,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
 	bool bIsStarving = false;
 
+	/** Haversack Field Rations (Local buffer in seconds, baseline 180s = 3 minutes of tactical autonomy away from ox-carts) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
+	float FieldRations = 180.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
+	float MaxFieldRations = 180.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
+	bool bIsResupplying = false;
+
+	/** Replenishes field haversack rations when within range of Ox-Cart or Marching Camp */
+	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")
+	void ReplenishFieldRations(float Amount);
+
+	/** Consumes field rations when detached from supply lines */
+	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")
+	void ConsumeFieldRations(float DeltaTime);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
 	FVector FormationSlotTarget;
 
