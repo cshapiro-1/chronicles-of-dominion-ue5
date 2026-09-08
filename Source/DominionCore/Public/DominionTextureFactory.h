@@ -37,6 +37,9 @@ public:
 	// Generates a 512x512 procedural Cedar Wood Grain texture
 	static UTexture2D* CreateCedarWoodAlbedo(int32 Width = 512, int32 Height = 512);
 
+	// Helper to create and configure dynamic material instance with M_DominionMaster
+	static UMaterialInstanceDynamic* CreateDominionMaterial(UObject* Outer, const FLinearColor& BaseColor, float Metallic = 0.0f, float Roughness = 0.7f, const FLinearColor& EmissiveColor = FLinearColor::Black);
+
 	// Helper to bind generated PBR textures to a dynamic material instance
 	static void ApplyPBRMaps(UMaterialInstanceDynamic* DynMat, UTexture2D* AlbedoMap, UTexture2D* NormalMap = nullptr, float Metallic = 0.0f, float Roughness = 0.5f);
 

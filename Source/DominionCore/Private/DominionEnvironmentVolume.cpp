@@ -13,56 +13,56 @@ ADominionEnvironmentVolume::ADominionEnvironmentVolume()
 	USceneComponent* SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
 
-	// 1. Directional Sun Light (Warm 5200K Mesopotamian Golden Hour Sun)
+	// 1. Directional Atmospheric Light (Mythic Grimdark Storm Light)
 	SunLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("SunLight"));
 	SunLight->SetupAttachment(RootComponent);
 	SunLight->SetMobility(EComponentMobility::Movable);
-	SunLight->SetRelativeRotation(FRotator(-48.0f, 135.0f, 0.0f)); // Low dramatic RTS sun angle
-	SunLight->SetIntensity(65000.0f); // 65,000 Lux
-	SunLight->SetLightColor(FLinearColor(1.0f, 0.88f, 0.72f)); // Warm Solar Ochre
+	SunLight->SetRelativeRotation(FRotator(-38.0f, 130.0f, 0.0f)); // Low dramatic storm angle
+	SunLight->SetIntensity(14000.0f); // Balanced for deep night/storm shadows and radiant firelight
+	SunLight->SetLightColor(FLinearColor(0.72f, 0.62f, 0.50f));
 	SunLight->bUseTemperature = true;
-	SunLight->Temperature = 5200.0f;
+	SunLight->Temperature = 4800.0f;
 	SunLight->bEnableLightShaftBloom = true;
 	SunLight->bEnableLightShaftOcclusion = true;
 	SunLight->CastShadows = true;
-	SunLight->DynamicShadowDistanceMovableLight = 25000.0f;
+	SunLight->DynamicShadowDistanceMovableLight = 30000.0f;
 	SunLight->DynamicShadowCascades = 4;
 	SunLight->CascadeDistributionExponent = 3.0f;
 	SunLight->bAtmosphereSunLight = true;
 	SunLight->AtmosphereSunLightIndex = 0;
 
-	// 2. Sky Light for Ambient Desert Bounces
+	// 2. Sky Light for Ambient Storm Bounce
 	SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
 	SkyLight->SetupAttachment(RootComponent);
 	SkyLight->SetMobility(EComponentMobility::Movable);
-	SkyLight->SetIntensity(2.2f);
-	SkyLight->SetLightColor(FLinearColor(0.78f, 0.86f, 0.98f));
+	SkyLight->SetIntensity(0.75f);
+	SkyLight->SetLightColor(FLinearColor(0.10f, 0.14f, 0.22f));
 	SkyLight->bRealTimeCapture = true;
 	SkyLight->CastShadows = true;
 
-	// 3. Sky Atmosphere Component for Rayleigh & Mie Dust Scattering
+	// 3. Sky Atmosphere Component for Storm Rayleigh & Smoke Scattering
 	SkyAtmosphere = CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
 	SkyAtmosphere->SetupAttachment(RootComponent);
-	SkyAtmosphere->RayleighScatteringScale = 0.045f;
-	SkyAtmosphere->RayleighScattering = FLinearColor(0.14f, 0.35f, 0.75f);
-	SkyAtmosphere->MieScatteringScale = 0.008f;
-	SkyAtmosphere->MieAbsorptionScale = 0.002f;
-	SkyAtmosphere->MieAnisotropy = 0.82f;
+	SkyAtmosphere->RayleighScatteringScale = 0.08f;
+	SkyAtmosphere->RayleighScattering = FLinearColor(0.08f, 0.18f, 0.45f);
+	SkyAtmosphere->MieScatteringScale = 0.015f;
+	SkyAtmosphere->MieAbsorptionScale = 0.005f;
+	SkyAtmosphere->MieAnisotropy = 0.85f;
 
-	// 4. Exponential Height Fog with Volumetric Dust God Rays
+	// 4. Exponential Height Fog with Volumetric Storm Mist
 	HeightFog = CreateDefaultSubobject<UExponentialHeightFogComponent>(TEXT("HeightFog"));
 	HeightFog->SetupAttachment(RootComponent);
 	HeightFog->SetMobility(EComponentMobility::Movable);
-	HeightFog->SetFogDensity(0.012f);
-	HeightFog->SetFogHeightFalloff(0.0025f);
-	HeightFog->SetFogInscatteringColor(FLinearColor(0.88f, 0.72f, 0.48f));
+	HeightFog->SetFogDensity(0.022f);
+	HeightFog->SetFogHeightFalloff(0.0020f);
+	HeightFog->SetFogInscatteringColor(FLinearColor(0.12f, 0.14f, 0.18f));
 	HeightFog->bEnableVolumetricFog = true;
-	HeightFog->VolumetricFogScatteringDistribution = 0.48f; // Forward dust scattering
-	HeightFog->VolumetricFogExtinctionScale = 0.04f;
-	HeightFog->VolumetricFogDistance = 28000.0f;
-	HeightFog->VolumetricFogAlbedo = FColor(235, 195, 140);
+	HeightFog->VolumetricFogScatteringDistribution = 0.65f;
+	HeightFog->VolumetricFogExtinctionScale = 0.06f;
+	HeightFog->VolumetricFogDistance = 30000.0f;
+	HeightFog->VolumetricFogAlbedo = FColor(70, 75, 85);
 
-	// 5. Cinematic Post Process Volume (Lumen GI, Reflections & Color Grading)
+	// 5. Cinematic Post Process Volume (Lumen GI, Reflections & Dark Grimdark Tonemapping)
 	PostProcessComp = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComp"));
 	PostProcessComp->SetupAttachment(RootComponent);
 	PostProcessComp->bUnbound = true; // Infinite extent
@@ -82,37 +82,37 @@ ADominionEnvironmentVolume::ADominionEnvironmentVolume()
 	Settings.bOverride_LumenReflectionQuality = true;
 	Settings.LumenReflectionQuality = 1.0f;
 
-	// Bloom & Lens Flare for Solar Shimmer
+	// Bloom & Lens Flare for Radiant Flame Glow
 	Settings.bOverride_BloomIntensity = true;
-	Settings.BloomIntensity = 0.42f;
+	Settings.BloomIntensity = 0.65f;
 	Settings.bOverride_BloomThreshold = true;
-	Settings.BloomThreshold = 1.1f;
+	Settings.BloomThreshold = 0.85f;
 
-	// Ambient Occlusion for Depth Crevices
+	// Ambient Occlusion for Deep Stone Crevices
 	Settings.bOverride_AmbientOcclusionIntensity = true;
-	Settings.AmbientOcclusionIntensity = 0.85f;
+	Settings.AmbientOcclusionIntensity = 1.15f;
 	Settings.bOverride_AmbientOcclusionRadius = true;
-	Settings.AmbientOcclusionRadius = 120.0f;
+	Settings.AmbientOcclusionRadius = 150.0f;
 
-	// Cinematic Color Grading (Warm Desert Sun Contrast)
+	// Cinematic Color Grading (Mythic Grimdark Bronze Contrast)
 	Settings.bOverride_WhiteTemp = true;
-	Settings.WhiteTemp = 5500.0f;
+	Settings.WhiteTemp = 5800.0f;
 	Settings.bOverride_ColorSaturation = true;
-	Settings.ColorSaturation = FVector4(1.10f, 1.08f, 1.05f, 1.0f);
+	Settings.ColorSaturation = FVector4(1.05f, 1.02f, 0.98f, 1.0f);
 	Settings.bOverride_ColorContrast = true;
-	Settings.ColorContrast = FVector4(1.14f, 1.12f, 1.08f, 1.0f);
+	Settings.ColorContrast = FVector4(1.22f, 1.18f, 1.12f, 1.0f);
 	Settings.bOverride_ColorGamma = true;
-	Settings.ColorGamma = FVector4(0.98f, 0.98f, 0.99f, 1.0f);
+	Settings.ColorGamma = FVector4(0.95f, 0.95f, 0.96f, 1.0f);
 
-	// Subtle Vignette
+	// Dramatic Vignette
 	Settings.bOverride_VignetteIntensity = true;
-	Settings.VignetteIntensity = 0.24f;
+	Settings.VignetteIntensity = 0.38f;
 
-	// Auto Exposure / EV100 tuning for crisp RTS framing
+	// Auto Exposure tuning for grimdark clarity
 	Settings.bOverride_AutoExposureMethod = true;
 	Settings.AutoExposureMethod = EAutoExposureMethod::AEM_Manual;
 	Settings.bOverride_AutoExposureBias = true;
-	Settings.AutoExposureBias = 0.2f;
+	Settings.AutoExposureBias = 0.4f;
 }
 
 void ADominionEnvironmentVolume::BeginPlay()

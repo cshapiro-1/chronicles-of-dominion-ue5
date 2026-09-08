@@ -220,43 +220,29 @@ void ADominionUnitActor::BeginPlay()
 	static UTexture2D* CedarAlbedo = UDominionTextureFactory::CreateCedarWoodAlbedo(512, 512);
 
 	// Dynamic PBR Setup with Metallic & Roughness & Texture Maps
-	auto ApplyDynPBR = [](UStaticMeshComponent* Comp, const FLinearColor& Color, float Metallic = 0.0f, float Roughness = 0.6f, UTexture2D* AlbedoMap = nullptr, UTexture2D* NormalMap = nullptr)
+	auto ApplyDynPBR = [this](UStaticMeshComponent* Comp, const FLinearColor& Color, float Metallic = 0.0f, float Roughness = 0.6f, const FLinearColor& EmissiveColor = FLinearColor::Black)
 	{
 		if (Comp)
 		{
-			UMaterialInstanceDynamic* DynMat = Comp->CreateAndSetMaterialInstanceDynamic(0);
+			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(this, Color, Metallic, Roughness, EmissiveColor);
 			if (DynMat)
 			{
-				DynMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-				DynMat->SetVectorParameterValue(TEXT("Color"), Color);
-				DynMat->SetScalarParameterValue(TEXT("Metallic"), Metallic);
-				DynMat->SetScalarParameterValue(TEXT("Roughness"), Roughness);
-				if (AlbedoMap)
-				{
-					DynMat->SetTextureParameterValue(TEXT("BaseColorMap"), AlbedoMap);
-					DynMat->SetTextureParameterValue(TEXT("AlbedoMap"), AlbedoMap);
-					DynMat->SetTextureParameterValue(TEXT("Texture"), AlbedoMap);
-				}
-				if (NormalMap)
-				{
-					DynMat->SetTextureParameterValue(TEXT("NormalMap"), NormalMap);
-					DynMat->SetTextureParameterValue(TEXT("Normal"), NormalMap);
-				}
+				Comp->SetMaterial(0, DynMat);
 			}
 		}
 	};
 
 	ApplyDynPBR(UnitMesh, TeamColor, 0.1f, 0.5f);
-	ApplyDynPBR(HelmetMesh, PolishedBronze, 0.95f, 0.22f, BronzeAlbedo, BronzeNormal);
+	ApplyDynPBR(HelmetMesh, PolishedBronze, 0.95f, 0.22f);
 	ApplyDynPBR(PlumeMesh, PlumeColor, 0.0f, 0.85f);
-	ApplyDynPBR(ShieldMesh, TeamColor, 0.2f, 0.4f, BronzeAlbedo, BronzeNormal);
-	ApplyDynPBR(ShieldBossMesh, SolarGold, 0.98f, 0.18f, BronzeAlbedo, BronzeNormal);
-	ApplyDynPBR(WeaponMesh, DarkCedarWood, 0.0f, 0.75f, CedarAlbedo);
-	ApplyDynPBR(SpearheadMesh, PolishedBronze, 0.95f, 0.20f, BronzeAlbedo, BronzeNormal);
-	ApplyDynPBR(MountLeftMesh, DarkCedarWood, 0.0f, 0.80f, CedarAlbedo);
-	ApplyDynPBR(MountRightMesh, DarkCedarWood, 0.0f, 0.80f, CedarAlbedo);
+	ApplyDynPBR(ShieldMesh, TeamColor, 0.3f, 0.4f);
+	ApplyDynPBR(ShieldBossMesh, SolarGold, 0.98f, 0.18f);
+	ApplyDynPBR(WeaponMesh, DarkCedarWood, 0.0f, 0.75f);
+	ApplyDynPBR(SpearheadMesh, PolishedBronze, 0.95f, 0.20f);
+	ApplyDynPBR(MountLeftMesh, DarkCedarWood, 0.0f, 0.80f);
+	ApplyDynPBR(MountRightMesh, DarkCedarWood, 0.0f, 0.80f);
 	ApplyDynPBR(CrewMesh, (UnitType == EDominionUnitType::OxCartSupply) ? LinenWhite : TeamColor, 0.0f, 0.8f);
-	ApplyDynPBR(SelectionRingMesh, SolarGold, 0.8f, 0.2f);
+	ApplyDynPBR(SelectionRingMesh, SolarGold, 0.8f, 0.2f, FLinearColor(2.0f, 1.6f, 0.2f));
 
 	// Apply Dynamic Material Tint to 3D Skeletal Mesh Warrior
 	if (SkeletalMesh)

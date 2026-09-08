@@ -28,7 +28,7 @@ void ADominionGameModeBase::StartPlay()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	// Automatically destroy default template playground obstacles (SM_Ramp, SM_QuarterCylinder)
+	// Automatically destroy all default template actors that cause white out and flat lighting
 	TArray<AActor*> LevelActors;
 	UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), LevelActors);
 	for (AActor* Act : LevelActors)
@@ -36,8 +36,12 @@ void ADominionGameModeBase::StartPlay()
 		if (Act && Act != this)
 		{
 			FString ActorName = Act->GetName();
-			if (ActorName.Contains(TEXT("SM_Ramp")) || ActorName.Contains(TEXT("SM_QuarterCylinder")) ||
-			    ActorName.Contains(TEXT("TopDownCharacter")) || ActorName.Contains(TEXT("BP_TopDown")))
+			if (ActorName.Contains(TEXT("DirectionalLight")) || ActorName.Contains(TEXT("SkyLight")) ||
+			    ActorName.Contains(TEXT("ExponentialHeightFog")) || ActorName.Contains(TEXT("SkyAtmosphere")) ||
+			    ActorName.Contains(TEXT("SM_SkySphere")) || ActorName.Contains(TEXT("VolumetricCloud")) ||
+			    ActorName.Contains(TEXT("Floor")) || ActorName.Contains(TEXT("SM_Ramp")) ||
+			    ActorName.Contains(TEXT("SM_QuarterCylinder")) || ActorName.Contains(TEXT("TopDownCharacter")) ||
+			    ActorName.Contains(TEXT("BP_TopDown")))
 			{
 				Act->Destroy();
 			}
@@ -51,7 +55,7 @@ void ADominionGameModeBase::StartPlay()
 		ADominionRTSPawn* RTSPawn = Cast<ADominionRTSPawn>(PC->GetPawn());
 		if (!RTSPawn)
 		{
-			RTSPawn = World->SpawnActor<ADominionRTSPawn>(ADominionRTSPawn::StaticClass(), FVector(-1800.0f, 0.0f, 1200.0f), FRotator::ZeroRotator, SpawnParams);
+			RTSPawn = World->SpawnActor<ADominionRTSPawn>(ADominionRTSPawn::StaticClass(), FVector(-1800.0f, 0.0f, 1400.0f), FRotator::ZeroRotator, SpawnParams);
 			if (RTSPawn)
 			{
 				PC->Possess(RTSPawn);
@@ -72,242 +76,184 @@ void ADominionGameModeBase::StartPlay()
 	UStaticMesh* CylinderMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	UStaticMesh* ConeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cone.Cone"));
 	UStaticMesh* PlaneMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
+	UStaticMesh* SphereMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 
-	// Generate Procedural Mesopotamian PBR Textures
-	UTexture2D* SandstoneAlbedo = UDominionTextureFactory::CreateSandstoneSiltAlbedo(512, 512);
-	UTexture2D* SandstoneNormal = UDominionTextureFactory::CreateSandstoneSiltNormal(512, 512);
-	UTexture2D* WaterNormal = UDominionTextureFactory::CreateWaterWaveNormal(512, 512);
-	UTexture2D* MudbrickAlbedo = UDominionTextureFactory::CreateMudbrickAlbedo(512, 512);
-	UTexture2D* MudbrickNormal = UDominionTextureFactory::CreateMudbrickNormal(512, 512);
-	UTexture2D* CedarAlbedo = UDominionTextureFactory::CreateCedarWoodAlbedo(512, 512);
+	// Color Palette for Mythic Grimdark Bronze Age (Matching Mockup Image 2)
+	const FLinearColor DarkFlagstoneGround(0.12f, 0.11f, 0.09f);
+	const FLinearColor DarkMudSilt(0.16f, 0.13f, 0.10f);
+	const FLinearColor DarkReflectiveRiver(0.06f, 0.10f, 0.16f);
+	const FLinearColor WeatheredDarkMudbrick(0.22f, 0.17f, 0.13f);
+	const FLinearColor DarkHewnStone(0.18f, 0.15f, 0.12f);
+	const FLinearColor DarkWoodTimber(0.14f, 0.09f, 0.05f);
+	const FLinearColor ForgeKilnBrick(0.19f, 0.14f, 0.11f);
+	const FLinearColor FieryHearthEmissive(65.0f, 22.0f, 2.0f);
+	const FLinearColor TorchFlameEmissive(40.0f, 14.0f, 1.5f);
 
-	// --- 1. Euphrates Valley River Water Plane & Silt Floodplain ---
+	// Helper to spawn static mesh actor with M_DominionMaster PBR material
+	auto SpawnProp = [World, &SpawnParams](UStaticMesh* Mesh, const FVector& Loc, const FRotator& Rot, const FVector& Scale, const FLinearColor& BaseColor, float Metallic = 0.0f, float Roughness = 0.7f, const FLinearColor& EmissiveColor = FLinearColor::Black) -> AStaticMeshActor*
+	{
+		if (!Mesh || !World) return nullptr;
+		AStaticMeshActor* Prop = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Loc, Rot, SpawnParams);
+		if (Prop && Prop->GetStaticMeshComponent())
+		{
+			Prop->GetStaticMeshComponent()->SetStaticMesh(Mesh);
+			Prop->SetActorScale3D(Scale);
+			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(Prop, BaseColor, Metallic, Roughness, EmissiveColor);
+			if (DynMat)
+			{
+				Prop->GetStaticMeshComponent()->SetMaterial(0, DynMat);
+			}
+		}
+		return Prop;
+	};
+
+	// --- 1. Vast Dark Wet Flagstone Citadel Ground ---
 	if (PlaneMesh)
 	{
-		// Shimmering Euphrates River Plane
-		AStaticMeshActor* RiverActor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FVector(1800.0f, 0.0f, 25.0f), FRotator::ZeroRotator, SpawnParams);
-		if (RiverActor && RiverActor->GetStaticMeshComponent())
+		// Main Citadel Flagstone Plaza Floor
+		SpawnProp(PlaneMesh, FVector(0.0f, 0.0f, 20.0f), FRotator::ZeroRotator, FVector(450.0f, 550.0f, 1.0f), DarkFlagstoneGround, 0.15f, 0.52f);
+
+		// Shimmering Euphrates River Channel (Right Flank)
+		AStaticMeshActor* River = SpawnProp(PlaneMesh, FVector(1900.0f, 0.0f, 24.0f), FRotator::ZeroRotator, FVector(220.0f, 700.0f, 1.0f), DarkReflectiveRiver, 0.25f, 0.04f);
+		if (River && River->GetStaticMeshComponent())
 		{
-			RiverActor->GetStaticMeshComponent()->SetStaticMesh(PlaneMesh);
-			RiverActor->SetActorScale3D(FVector(180.0f, 600.0f, 1.0f));
-			UMaterialInstanceDynamic* RiverMat = RiverActor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-			if (RiverMat)
-			{
-				RiverMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.04f, 0.28f, 0.46f, 0.92f));
-				RiverMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.04f, 0.28f, 0.46f, 0.92f));
-				RiverMat->SetScalarParameterValue(TEXT("Roughness"), 0.04f);
-				RiverMat->SetScalarParameterValue(TEXT("Metallic"), 0.25f);
-				RiverMat->SetScalarParameterValue(TEXT("Specular"), 0.95f);
-				if (WaterNormal)
-				{
-					RiverMat->SetTextureParameterValue(TEXT("NormalMap"), WaterNormal);
-					RiverMat->SetTextureParameterValue(TEXT("Normal"), WaterNormal);
-				}
-			}
+			River->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
 		}
 
-		// Fertile Oasis Floodplain Ground
-		AStaticMeshActor* OasisActor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FVector(1200.0f, 0.0f, 22.0f), FRotator::ZeroRotator, SpawnParams);
-		if (OasisActor && OasisActor->GetStaticMeshComponent())
-		{
-			OasisActor->GetStaticMeshComponent()->SetStaticMesh(PlaneMesh);
-			OasisActor->SetActorScale3D(FVector(80.0f, 500.0f, 1.0f));
-			UMaterialInstanceDynamic* OasisMat = OasisActor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-			if (OasisMat)
-			{
-				OasisMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.22f, 0.44f, 0.16f)); // Lush floodplain green
-				OasisMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.22f, 0.44f, 0.16f));
-				OasisMat->SetScalarParameterValue(TEXT("Roughness"), 0.85f);
-				if (SandstoneNormal)
-				{
-					OasisMat->SetTextureParameterValue(TEXT("NormalMap"), SandstoneNormal);
-					OasisMat->SetTextureParameterValue(TEXT("Normal"), SandstoneNormal);
-				}
-			}
-		}
-
-		// City Foundation Plaza (Sandstone Silt Ground)
-		AStaticMeshActor* PlazaActor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FVector(-300.0f, 0.0f, 20.0f), FRotator::ZeroRotator, SpawnParams);
-		if (PlazaActor && PlazaActor->GetStaticMeshComponent())
-		{
-			PlazaActor->GetStaticMeshComponent()->SetStaticMesh(PlaneMesh);
-			PlazaActor->SetActorScale3D(FVector(250.0f, 300.0f, 1.0f));
-			UMaterialInstanceDynamic* PlazaMat = PlazaActor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-			if (PlazaMat)
-			{
-				PlazaMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.74f, 0.60f, 0.42f));
-				PlazaMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.74f, 0.60f, 0.42f));
-				PlazaMat->SetScalarParameterValue(TEXT("Roughness"), 0.90f);
-				if (SandstoneAlbedo)
-				{
-					PlazaMat->SetTextureParameterValue(TEXT("BaseColorMap"), SandstoneAlbedo);
-					PlazaMat->SetTextureParameterValue(TEXT("AlbedoMap"), SandstoneAlbedo);
-					PlazaMat->SetTextureParameterValue(TEXT("Texture"), SandstoneAlbedo);
-				}
-				if (SandstoneNormal)
-				{
-					PlazaMat->SetTextureParameterValue(TEXT("NormalMap"), SandstoneNormal);
-					PlazaMat->SetTextureParameterValue(TEXT("Normal"), SandstoneNormal);
-				}
-			}
-		}
-
-		// Marching Road Silt Ribbon
-		AStaticMeshActor* RoadActor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), FVector(400.0f, 0.0f, 23.0f), FRotator::ZeroRotator, SpawnParams);
-		if (RoadActor && RoadActor->GetStaticMeshComponent())
-		{
-			RoadActor->GetStaticMeshComponent()->SetStaticMesh(PlaneMesh);
-			RoadActor->SetActorScale3D(FVector(140.0f, 40.0f, 1.0f));
-			UMaterialInstanceDynamic* RoadMat = RoadActor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-			if (RoadMat)
-			{
-				RoadMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.55f, 0.42f, 0.28f));
-				RoadMat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.55f, 0.42f, 0.28f));
-				RoadMat->SetScalarParameterValue(TEXT("Roughness"), 0.85f);
-				if (MudbrickNormal)
-				{
-					RoadMat->SetTextureParameterValue(TEXT("NormalMap"), MudbrickNormal);
-					RoadMat->SetTextureParameterValue(TEXT("Normal"), MudbrickNormal);
-				}
-			}
-		}
+		// River Silt Bank
+		SpawnProp(PlaneMesh, FVector(1350.0f, 0.0f, 22.0f), FRotator::ZeroRotator, FVector(60.0f, 600.0f, 1.0f), DarkMudSilt, 0.05f, 0.75f);
 	}
 
-	// --- 2. Procedural Date Palm Groves ---
-	if (CylinderMesh && ConeMesh)
-	{
-		const FVector PalmLocations[] = {
-			FVector(1100.0f, -400.0f, 30.0f),
-			FVector(1150.0f, -600.0f, 30.0f),
-			FVector(1080.0f, 500.0f, 30.0f),
-			FVector(1220.0f, 750.0f, 30.0f),
-			FVector(-600.0f, 700.0f, 30.0f),
-			FVector(-750.0f, 850.0f, 30.0f),
-			FVector(1300.0f, -200.0f, 30.0f),
-			FVector(1350.0f, 300.0f, 30.0f)
-		};
-
-		for (const FVector& PalmLoc : PalmLocations)
-		{
-			// Palm Trunk
-			AStaticMeshActor* Trunk = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), PalmLoc, FRotator::ZeroRotator, SpawnParams);
-			if (Trunk && Trunk->GetStaticMeshComponent())
-			{
-				Trunk->GetStaticMeshComponent()->SetStaticMesh(CylinderMesh);
-				Trunk->SetActorScale3D(FVector(0.35f, 0.35f, 3.2f));
-				UMaterialInstanceDynamic* TrunkMat = Trunk->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-				if (TrunkMat)
-				{
-					TrunkMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.36f, 0.22f, 0.12f));
-					TrunkMat->SetScalarParameterValue(TEXT("Roughness"), 0.90f);
-				}
-			}
-
-			// Palm Leaf Canopy Crown Layer 1
-			AStaticMeshActor* Crown1 = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), PalmLoc + FVector(0.0f, 0.0f, 170.0f), FRotator(180.0f, 0.0f, 0.0f), SpawnParams);
-			if (Crown1 && Crown1->GetStaticMeshComponent())
-			{
-				Crown1->GetStaticMeshComponent()->SetStaticMesh(ConeMesh);
-				Crown1->SetActorScale3D(FVector(2.8f, 2.8f, 1.1f));
-				UMaterialInstanceDynamic* CrownMat = Crown1->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-				if (CrownMat)
-				{
-					CrownMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.16f, 0.46f, 0.12f));
-					CrownMat->SetScalarParameterValue(TEXT("Roughness"), 0.70f);
-				}
-			}
-
-			// Palm Leaf Canopy Crown Layer 2 (Top Tier)
-			AStaticMeshActor* Crown2 = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), PalmLoc + FVector(0.0f, 0.0f, 210.0f), FRotator(180.0f, 45.0f, 0.0f), SpawnParams);
-			if (Crown2 && Crown2->GetStaticMeshComponent())
-			{
-				Crown2->GetStaticMeshComponent()->SetStaticMesh(ConeMesh);
-				Crown2->SetActorScale3D(FVector(1.9f, 1.9f, 0.9f));
-				UMaterialInstanceDynamic* CrownMat = Crown2->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-				if (CrownMat)
-				{
-					CrownMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.24f, 0.58f, 0.18f));
-					CrownMat->SetScalarParameterValue(TEXT("Roughness"), 0.65f);
-				}
-			}
-		}
-	}
-
-	// --- 3. Colossal Unimpregnable Fortification Walls & Bastions (80m Tall) ---
+	// --- 2. River Docks & Moored Wooden Barges (Right Flank) ---
 	if (CubeMesh)
 	{
+		// Main Wooden Dock Pier
+		SpawnProp(CubeMesh, FVector(1450.0f, -400.0f, 32.0f), FRotator::ZeroRotator, FVector(4.5f, 12.0f, 0.35f), DarkWoodTimber, 0.0f, 0.85f);
+		SpawnProp(CubeMesh, FVector(1450.0f, 350.0f, 32.0f), FRotator::ZeroRotator, FVector(4.5f, 12.0f, 0.35f), DarkWoodTimber, 0.0f, 0.85f);
+
+		// Moored Wooden River Barges / Boats
+		const FVector BoatLocations[] = {
+			FVector(1720.0f, -380.0f, 28.0f),
+			FVector(1750.0f, 400.0f, 28.0f),
+			FVector(1820.0f, -650.0f, 28.0f)
+		};
+		for (const FVector& BoatLoc : BoatLocations)
+		{
+			SpawnProp(CubeMesh, BoatLoc, FRotator(0.0f, 15.0f, 0.0f), FVector(3.2f, 1.2f, 0.6f), DarkWoodTimber, 0.0f, 0.80f);
+		}
+	}
+
+	// --- 3. Bronze Smelting Forges & Glowing Beehive Kilns (Left Flank) ---
+	if (SphereMesh && CylinderMesh && CubeMesh)
+	{
+		const FVector KilnLocations[] = {
+			FVector(-600.0f, -1100.0f, 60.0f),
+			FVector(-1100.0f, -1350.0f, 60.0f)
+		};
+
+		for (const FVector& KilnLoc : KilnLocations)
+		{
+			// Beehive Kiln Dome Body
+			SpawnProp(SphereMesh, KilnLoc, FRotator::ZeroRotator, FVector(2.8f, 2.8f, 2.5f), ForgeKilnBrick, 0.05f, 0.88f);
+
+			// Chimney Smoke Stack
+			SpawnProp(CylinderMesh, KilnLoc + FVector(0.0f, 0.0f, 160.0f), FRotator::ZeroRotator, FVector(0.7f, 0.7f, 1.8f), ForgeKilnBrick, 0.05f, 0.90f);
+
+			// Glowing Fiery Hearth Mouth (Open Fire Interior)
+			SpawnProp(CubeMesh, KilnLoc + FVector(110.0f, 0.0f, -15.0f), FRotator::ZeroRotator, FVector(0.6f, 1.2f, 0.9f), FLinearColor(1.0f, 0.35f, 0.05f), 0.0f, 0.2f, FieryHearthEmissive);
+
+			// Dynamic Radiant Fire Light from Forge Crucible
+			AStaticMeshActor* LightAnchor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), KilnLoc + FVector(140.0f, 0.0f, 10.0f), FRotator::ZeroRotator, SpawnParams);
+			if (LightAnchor)
+			{
+				UPointLightComponent* ForgeLight = NewObject<UPointLightComponent>(LightAnchor);
+				ForgeLight->SetupAttachment(LightAnchor->GetRootComponent());
+				ForgeLight->SetMobility(EComponentMobility::Movable);
+				ForgeLight->SetLightColor(FLinearColor(1.0f, 0.48f, 0.12f));
+				ForgeLight->SetIntensity(24000.0f);
+				ForgeLight->SetAttenuationRadius(2500.0f);
+				ForgeLight->SetCastShadows(true);
+				ForgeLight->RegisterComponent();
+			}
+
+			// Blacksmith Anvil & Smelting Tables
+			SpawnProp(CubeMesh, KilnLoc + FVector(180.0f, 80.0f, 0.0f), FRotator::ZeroRotator, FVector(0.8f, 1.4f, 0.6f), DarkWoodTimber, 0.0f, 0.80f);
+			SpawnProp(CubeMesh, KilnLoc + FVector(180.0f, -80.0f, 0.0f), FRotator::ZeroRotator, FVector(0.6f, 0.6f, 0.8f), FLinearColor(0.25f, 0.22f, 0.20f), 0.95f, 0.30f); // Bronze anvil
+		}
+	}
+
+	// --- 4. Fortification Bastion Walls & Flaming Perimeter Braziers ---
+	if (CubeMesh && CylinderMesh)
+	{
 		const FVector WallLocations[] = {
-			FVector(-2800.0f, 0.0f, 260.0f),    // Colossal Rear Keep Wall
-			FVector(-1200.0f, -2200.0f, 260.0f), // Left Flank Wall
-			FVector(-1200.0f, 2200.0f, 260.0f)   // Right Flank Wall
+			FVector(-2600.0f, 0.0f, 220.0f),    // Colossal Rear Keep Wall
+			FVector(-1200.0f, -2000.0f, 220.0f), // Left Flank Wall
+			FVector(-1200.0f, 2000.0f, 220.0f),  // Right Flank Wall
+			FVector(1300.0f, -1200.0f, 180.0f),  // River Gate Bastion Left
+			FVector(1300.0f, 1200.0f, 180.0f)   // River Gate Bastion Right
 		};
 
 		const FVector WallScales[] = {
-			FVector(2.5f, 48.0f, 6.0f),
-			FVector(36.0f, 2.5f, 6.0f),
-			FVector(36.0f, 2.5f, 6.0f)
+			FVector(2.5f, 44.0f, 5.0f),
+			FVector(32.0f, 2.5f, 5.0f),
+			FVector(32.0f, 2.5f, 5.0f),
+			FVector(2.0f, 16.0f, 4.0f),
+			FVector(2.0f, 16.0f, 4.0f)
 		};
 
-		for (int32 w = 0; w < 3; ++w)
+		for (int32 w = 0; w < 5; ++w)
 		{
-			AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), WallLocations[w], FRotator::ZeroRotator, SpawnParams);
-			if (Wall && Wall->GetStaticMeshComponent())
-			{
-				Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
-				Wall->SetActorScale3D(WallScales[w]);
-				UMaterialInstanceDynamic* WallMat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-				if (WallMat)
-				{
-					WallMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.68f, 0.52f, 0.36f));
-					WallMat->SetScalarParameterValue(TEXT("Roughness"), 0.88f);
-				}
-			}
+			SpawnProp(CubeMesh, WallLocations[w], FRotator::ZeroRotator, WallScales[w], WeatheredDarkMudbrick, 0.0f, 0.88f);
 		}
 
-		// Monumental Corner Citadel Bastions (Towering 90m)
+		// Monumental Corner Fortress Bastions (Towering 80m)
 		const FVector BastionLocations[] = {
-			FVector(-2800.0f, -2200.0f, 380.0f),
-			FVector(-2800.0f, 2200.0f, 380.0f),
-			FVector(400.0f, -2200.0f, 380.0f),
-			FVector(400.0f, 2200.0f, 380.0f)
+			FVector(-2600.0f, -2000.0f, 320.0f),
+			FVector(-2600.0f, 2000.0f, 320.0f),
+			FVector(600.0f, -2000.0f, 320.0f),
+			FVector(600.0f, 2000.0f, 320.0f)
 		};
 
 		for (const FVector& BastionLoc : BastionLocations)
 		{
-			AStaticMeshActor* Bastion = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), BastionLoc, FRotator::ZeroRotator, SpawnParams);
-			if (Bastion && Bastion->GetStaticMeshComponent())
+			SpawnProp(CubeMesh, BastionLoc, FRotator::ZeroRotator, FVector(4.2f, 4.2f, 8.0f), DarkHewnStone, 0.0f, 0.85f);
+
+			// Bastion Flame Brazier
+			SpawnProp(CylinderMesh, BastionLoc + FVector(0.0f, 0.0f, 420.0f), FRotator::ZeroRotator, FVector(0.8f, 0.8f, 0.6f), DarkHewnStone, 0.1f, 0.7f, TorchFlameEmissive);
+
+			AStaticMeshActor* BrazierLightActor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), BastionLoc + FVector(0.0f, 0.0f, 460.0f), FRotator::ZeroRotator, SpawnParams);
+			if (BrazierLightActor)
 			{
-				Bastion->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
-				Bastion->SetActorScale3D(FVector(4.5f, 4.5f, 9.5f));
-				UMaterialInstanceDynamic* BastionMat = Bastion->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
-				if (BastionMat)
-				{
-					BastionMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.58f, 0.44f, 0.30f));
-					BastionMat->SetScalarParameterValue(TEXT("Roughness"), 0.85f);
-				}
+				UPointLightComponent* BastionLight = NewObject<UPointLightComponent>(BrazierLightActor);
+				BastionLight->SetupAttachment(BrazierLightActor->GetRootComponent());
+				BastionLight->SetMobility(EComponentMobility::Movable);
+				BastionLight->SetLightColor(FLinearColor(1.0f, 0.52f, 0.14f));
+				BastionLight->SetIntensity(16000.0f);
+				BastionLight->SetAttenuationRadius(2800.0f);
+				BastionLight->SetCastShadows(false);
+				BastionLight->RegisterComponent();
 			}
 		}
 	}
 
-	// --- 4. Spawn Colossal Citadel & Settlements ---
-	// 1. Colossal Citadel Town Center
+	// --- 5. Spawn Colossal Stepped Ziggurat Citadel (Center-Rear) ---
 	ADominionBuildingActor* Citadel = World->SpawnActor<ADominionBuildingActor>(
 		ADominionBuildingActor::StaticClass(),
-		FVector(-1200.0f, 0.0f, 100.0f),
+		FVector(-1200.0f, 0.0f, 80.0f),
 		FRotator::ZeroRotator,
 		SpawnParams
 	);
 	if (Citadel)
 	{
-		Citadel->BuildingName = TEXT("Grand Monumental Citadel of Dominion");
+		Citadel->BuildingName = TEXT("Grand Stepped Ziggurat of Dominion");
 		Citadel->TeamID = 0;
 		Citadel->SetArchitecturalStyle(EDominionArchitecturalStyle::AngkorWatHewnStone);
 	}
 
-	// 2. Colossal Granary Vault
+	// Granary Vault
 	ADominionBuildingActor* Granary = World->SpawnActor<ADominionBuildingActor>(
 		ADominionBuildingActor::StaticClass(),
-		FVector(-2000.0f, 950.0f, 100.0f),
+		FVector(-1900.0f, 900.0f, 80.0f),
 		FRotator::ZeroRotator,
 		SpawnParams
 	);
@@ -316,20 +262,22 @@ void ADominionGameModeBase::StartPlay()
 		Granary->BuildingName = TEXT("Megalithic Granary Vault");
 		Granary->BuildingType = EDominionBuildingType::MudbrickGranary;
 		Granary->TeamID = 0;
+		Granary->SetArchitecturalStyle(EDominionArchitecturalStyle::PrimitiveEarthAndMud);
 	}
 
-	// 3. Colossal War Forge & Barracks
+	// War Forge & Barracks
 	ADominionBuildingActor* Barracks = World->SpawnActor<ADominionBuildingActor>(
 		ADominionBuildingActor::StaticClass(),
-		FVector(-2000.0f, -950.0f, 100.0f),
+		FVector(-1900.0f, -900.0f, 80.0f),
 		FRotator::ZeroRotator,
 		SpawnParams
 	);
 	if (Barracks)
 	{
-		Barracks->BuildingName = TEXT("Colossal War Forge & Barracks");
+		Barracks->BuildingName = TEXT("Colossal Bronze War Forge");
 		Barracks->BuildingType = EDominionBuildingType::BronzeBarracks;
 		Barracks->TeamID = 0;
+		Barracks->SetArchitecturalStyle(EDominionArchitecturalStyle::PrimitiveEarthAndMud);
 	}
 
 	// --- 5. Spawn Player 100-Soldier Mass Legion (10x10 Phalanx Shield Wall) ---

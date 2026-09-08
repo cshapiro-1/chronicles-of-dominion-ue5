@@ -254,111 +254,58 @@ void ADominionBuildingActor::SetArchitecturalStyle(EDominionArchitecturalStyle N
 
 void ADominionBuildingActor::ApplyCurrentStyleVisuals()
 {
-	static UTexture2D* MudbrickAlbedo = UDominionTextureFactory::CreateMudbrickAlbedo(512, 512);
-	static UTexture2D* MudbrickNormal = UDominionTextureFactory::CreateMudbrickNormal(512, 512);
-	static UTexture2D* SandstoneAlbedo = UDominionTextureFactory::CreateSandstoneSiltAlbedo(512, 512);
-	static UTexture2D* SandstoneNormal = UDominionTextureFactory::CreateSandstoneSiltNormal(512, 512);
-	static UTexture2D* BronzeAlbedo = UDominionTextureFactory::CreateHammeredBronzeAlbedo(512, 512);
-	static UTexture2D* BronzeNormal = UDominionTextureFactory::CreateHammeredBronzeNormal(512, 512);
-
-	auto ApplyDynMaterial = [](UStaticMeshComponent* Comp, const FLinearColor& Color, float Metallic = 0.0f, float Roughness = 0.7f, UTexture2D* AlbedoMap = nullptr, UTexture2D* NormalMap = nullptr)
+	auto ApplyMaterial = [this](UStaticMeshComponent* Comp, const FLinearColor& BaseColor, float Metallic = 0.0f, float Roughness = 0.7f, const FLinearColor& EmissiveColor = FLinearColor::Black)
 	{
 		if (Comp)
 		{
-			UMaterialInstanceDynamic* DynMat = Comp->CreateAndSetMaterialInstanceDynamic(0);
+			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(this, BaseColor, Metallic, Roughness, EmissiveColor);
 			if (DynMat)
 			{
-				DynMat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-				DynMat->SetVectorParameterValue(TEXT("Color"), Color);
-				DynMat->SetScalarParameterValue(TEXT("Metallic"), Metallic);
-				DynMat->SetScalarParameterValue(TEXT("Roughness"), Roughness);
-				if (AlbedoMap)
-				{
-					DynMat->SetTextureParameterValue(TEXT("BaseColorMap"), AlbedoMap);
-					DynMat->SetTextureParameterValue(TEXT("AlbedoMap"), AlbedoMap);
-					DynMat->SetTextureParameterValue(TEXT("Texture"), AlbedoMap);
-				}
-				if (NormalMap)
-				{
-					DynMat->SetTextureParameterValue(TEXT("NormalMap"), NormalMap);
-					DynMat->SetTextureParameterValue(TEXT("Normal"), NormalMap);
-				}
+				Comp->SetMaterial(0, DynMat);
 			}
 		}
 	};
 
 	const FLinearColor GoldSelection(1.0f, 0.84f, 0.0f);
 
-	if (ArchitecturalStyle == EDominionArchitecturalStyle::PrimitiveEarthAndMud)
+	if (ArchitecturalStyle == EDominionArchitecturalStyle::PrimitiveEarthAndMud || ArchitecturalStyle == EDominionArchitecturalStyle::AngkorWatHewnStone)
 	{
-		// Era 1: Primitive Mud & Megalithic Earthwork
-		const FLinearColor MudClay(0.72f, 0.54f, 0.36f);
-		const FLinearColor RawTimber(0.36f, 0.24f, 0.14f);
-		const FLinearColor RoughStone(0.55f, 0.50f, 0.44f);
-		const FLinearColor StrawHide(0.78f, 0.68f, 0.48f);
-
-		TowerLeftSpire->SetVisibility(false);
-		TowerRightSpire->SetVisibility(false);
-		FlyingButtressLeft->SetVisibility(false);
-		FlyingButtressRight->SetVisibility(false);
-		SpikeRidgeMesh1->SetVisibility(true); // Timber palisade spikes
-		SpikeRidgeMesh2->SetVisibility(true);
-
-		ApplyDynMaterial(BuildingMesh, MudClay, 0.0f, 0.90f, MudbrickAlbedo, MudbrickNormal);
-		ApplyDynMaterial(Tier2Mesh, RoughStone, 0.0f, 0.85f, MudbrickAlbedo, MudbrickNormal);
-		ApplyDynMaterial(TempleShrineMesh, MudClay, 0.0f, 0.90f, MudbrickAlbedo, MudbrickNormal);
-		ApplyDynMaterial(ShrineRoofMesh, StrawHide, 0.0f, 0.95f, SandstoneAlbedo, SandstoneNormal);
-		ApplyDynMaterial(RampMesh, MudClay, 0.0f, 0.90f, MudbrickAlbedo, MudbrickNormal);
-		ApplyDynMaterial(LeftRampMesh, RoughStone, 0.0f, 0.88f, MudbrickAlbedo, MudbrickNormal);
-		ApplyDynMaterial(RightRampMesh, RoughStone, 0.0f, 0.88f, MudbrickAlbedo, MudbrickNormal);
-		ApplyDynMaterial(GateArchMesh, RawTimber, 0.0f, 0.80f);
-		ApplyDynMaterial(SpikeRidgeMesh1, RawTimber, 0.0f, 0.85f);
-		ApplyDynMaterial(SpikeRidgeMesh2, RawTimber, 0.0f, 0.85f);
-		ApplyDynMaterial(BannerLeftMesh, StrawHide, 0.0f, 0.9f);
-		ApplyDynMaterial(BannerRightMesh, StrawHide, 0.0f, 0.9f);
-		ApplyDynMaterial(BrazierMesh, RoughStone, 0.0f, 0.85f, BronzeAlbedo, BronzeNormal);
-
-		if (BrazierLight)
-		{
-			BrazierLight->SetLightColor(FLinearColor(1.0f, 0.45f, 0.10f));
-			BrazierLight->SetIntensity(10000.0f);
-		}
-	}
-	else if (ArchitecturalStyle == EDominionArchitecturalStyle::AngkorWatHewnStone)
-	{
-		// Era 2: Angkor Wat Hewn Sandstone & Lotus-Bud Prang Spires
-		const FLinearColor WeatheredSandstone(0.68f, 0.60f, 0.48f);
-		const FLinearColor MossyGreenStone(0.48f, 0.52f, 0.40f);
-		const FLinearColor SacredGold(0.95f, 0.78f, 0.22f);
-		const FLinearColor DarkBasalt(0.32f, 0.30f, 0.28f);
+		// Mythic Grimdark Bronze Age Citadel & Ziggurat (Matching Visual Target Mockup)
+		const FLinearColor WeatheredMudbrick(0.24f, 0.18f, 0.14f);
+		const FLinearColor DarkHewnStone(0.18f, 0.15f, 0.12f);
+		const FLinearColor VerdigrisCopperRoof(0.18f, 0.38f, 0.32f); // Oxidized green bronze/copper temple roof
+		const FLinearColor RawCedarTimber(0.15f, 0.10f, 0.06f);
+		const FLinearColor DarkBronze(0.55f, 0.38f, 0.16f);
+		const FLinearColor FireEmissive(35.0f, 10.0f, 1.0f);
 
 		TowerLeftSpire->SetVisibility(true);
 		TowerRightSpire->SetVisibility(true);
-		FlyingButtressLeft->SetVisibility(true); // Carved stone balustrades
+		FlyingButtressLeft->SetVisibility(true);
 		FlyingButtressRight->SetVisibility(true);
 		SpikeRidgeMesh1->SetVisibility(false);
 		SpikeRidgeMesh2->SetVisibility(false);
 
-		ApplyDynMaterial(BuildingMesh, WeatheredSandstone, 0.0f, 0.78f);
-		ApplyDynMaterial(Tier2Mesh, MossyGreenStone, 0.0f, 0.80f);
-		ApplyDynMaterial(TempleShrineMesh, WeatheredSandstone, 0.0f, 0.75f);
-		ApplyDynMaterial(ShrineRoofMesh, SacredGold, 0.7f, 0.35f);
-		ApplyDynMaterial(TowerLeftSpire, WeatheredSandstone, 0.0f, 0.75f);
-		ApplyDynMaterial(TowerRightSpire, WeatheredSandstone, 0.0f, 0.75f);
-		ApplyDynMaterial(FlyingButtressLeft, MossyGreenStone, 0.0f, 0.80f);
-		ApplyDynMaterial(FlyingButtressRight, MossyGreenStone, 0.0f, 0.80f);
-		ApplyDynMaterial(RampMesh, WeatheredSandstone, 0.0f, 0.78f);
-		ApplyDynMaterial(LeftRampMesh, DarkBasalt, 0.0f, 0.82f);
-		ApplyDynMaterial(RightRampMesh, DarkBasalt, 0.0f, 0.82f);
-		ApplyDynMaterial(GateArchMesh, WeatheredSandstone, 0.0f, 0.75f);
-		ApplyDynMaterial(BannerLeftMesh, SacredGold, 0.5f, 0.4f);
-		ApplyDynMaterial(BannerRightMesh, SacredGold, 0.5f, 0.4f);
-		ApplyDynMaterial(BrazierMesh, DarkBasalt, 0.1f, 0.75f);
+		ApplyMaterial(BuildingMesh, WeatheredMudbrick, 0.0f, 0.88f);
+		ApplyMaterial(Tier2Mesh, WeatheredMudbrick, 0.0f, 0.85f);
+		ApplyMaterial(TempleShrineMesh, WeatheredMudbrick, 0.0f, 0.82f);
+		ApplyMaterial(ShrineRoofMesh, VerdigrisCopperRoof, 0.75f, 0.32f); // Shining verdigris temple roof
+		ApplyMaterial(TowerLeftSpire, DarkHewnStone, 0.0f, 0.85f);
+		ApplyMaterial(TowerRightSpire, DarkHewnStone, 0.0f, 0.85f);
+		ApplyMaterial(FlyingButtressLeft, DarkHewnStone, 0.0f, 0.85f);
+		ApplyMaterial(FlyingButtressRight, DarkHewnStone, 0.0f, 0.85f);
+		ApplyMaterial(RampMesh, DarkHewnStone, 0.0f, 0.80f);
+		ApplyMaterial(LeftRampMesh, DarkHewnStone, 0.0f, 0.82f);
+		ApplyMaterial(RightRampMesh, DarkHewnStone, 0.0f, 0.82f);
+		ApplyMaterial(GateArchMesh, WeatheredMudbrick, 0.0f, 0.85f);
+		ApplyMaterial(BannerLeftMesh, DarkBronze, 0.85f, 0.25f);
+		ApplyMaterial(BannerRightMesh, DarkBronze, 0.85f, 0.25f);
+		ApplyMaterial(BrazierMesh, DarkHewnStone, 0.1f, 0.75f, FireEmissive);
 
 		if (BrazierLight)
 		{
-			BrazierLight->SetLightColor(FLinearColor(1.0f, 0.72f, 0.25f));
-			BrazierLight->SetIntensity(15000.0f);
+			BrazierLight->SetLightColor(FLinearColor(1.0f, 0.45f, 0.10f));
+			BrazierLight->SetIntensity(18000.0f);
+			BrazierLight->SetAttenuationRadius(2800.0f);
 		}
 	}
 	else if (ArchitecturalStyle == EDominionArchitecturalStyle::DarkEvilGothic)
@@ -376,23 +323,23 @@ void ADominionBuildingActor::ApplyCurrentStyleVisuals()
 		SpikeRidgeMesh1->SetVisibility(true); // Evil spiky gargoyle finials
 		SpikeRidgeMesh2->SetVisibility(true);
 
-		ApplyDynMaterial(BuildingMesh, ObsidianBlack, 0.25f, 0.45f);
-		ApplyDynMaterial(Tier2Mesh, ObsidianBlack, 0.30f, 0.40f);
-		ApplyDynMaterial(TempleShrineMesh, ObsidianBlack, 0.35f, 0.35f);
-		ApplyDynMaterial(ShrineRoofMesh, SpikyIron, 0.95f, 0.20f);
-		ApplyDynMaterial(TowerLeftSpire, SpikyIron, 0.95f, 0.18f);
-		ApplyDynMaterial(TowerRightSpire, SpikyIron, 0.95f, 0.18f);
-		ApplyDynMaterial(FlyingButtressLeft, ObsidianBlack, 0.20f, 0.50f);
-		ApplyDynMaterial(FlyingButtressRight, ObsidianBlack, 0.20f, 0.50f);
-		ApplyDynMaterial(SpikeRidgeMesh1, SpikyIron, 0.95f, 0.15f);
-		ApplyDynMaterial(SpikeRidgeMesh2, SpikyIron, 0.95f, 0.15f);
-		ApplyDynMaterial(RampMesh, ObsidianBlack, 0.20f, 0.55f);
-		ApplyDynMaterial(LeftRampMesh, PaleMarbleGargoyle, 0.10f, 0.60f);
-		ApplyDynMaterial(RightRampMesh, PaleMarbleGargoyle, 0.10f, 0.60f);
-		ApplyDynMaterial(GateArchMesh, SpikyIron, 0.90f, 0.25f);
-		ApplyDynMaterial(BannerLeftMesh, BloodCrimson, 0.0f, 0.6f);
-		ApplyDynMaterial(BannerRightMesh, BloodCrimson, 0.0f, 0.6f);
-		ApplyDynMaterial(BrazierMesh, SpikyIron, 0.95f, 0.20f);
+		ApplyMaterial(BuildingMesh, ObsidianBlack, 0.25f, 0.45f);
+		ApplyMaterial(Tier2Mesh, ObsidianBlack, 0.30f, 0.40f);
+		ApplyMaterial(TempleShrineMesh, ObsidianBlack, 0.35f, 0.35f);
+		ApplyMaterial(ShrineRoofMesh, SpikyIron, 0.95f, 0.20f);
+		ApplyMaterial(TowerLeftSpire, SpikyIron, 0.95f, 0.18f);
+		ApplyMaterial(TowerRightSpire, SpikyIron, 0.95f, 0.18f);
+		ApplyMaterial(FlyingButtressLeft, ObsidianBlack, 0.20f, 0.50f);
+		ApplyMaterial(FlyingButtressRight, ObsidianBlack, 0.20f, 0.50f);
+		ApplyMaterial(SpikeRidgeMesh1, SpikyIron, 0.95f, 0.15f);
+		ApplyMaterial(SpikeRidgeMesh2, SpikyIron, 0.95f, 0.15f);
+		ApplyMaterial(RampMesh, ObsidianBlack, 0.20f, 0.55f);
+		ApplyMaterial(LeftRampMesh, PaleMarbleGargoyle, 0.10f, 0.60f);
+		ApplyMaterial(RightRampMesh, PaleMarbleGargoyle, 0.10f, 0.60f);
+		ApplyMaterial(GateArchMesh, SpikyIron, 0.90f, 0.25f);
+		ApplyMaterial(BannerLeftMesh, BloodCrimson, 0.0f, 0.6f);
+		ApplyMaterial(BannerRightMesh, BloodCrimson, 0.0f, 0.6f);
+		ApplyMaterial(BrazierMesh, SpikyIron, 0.95f, 0.20f);
 
 		if (BrazierLight)
 		{
@@ -415,23 +362,23 @@ void ADominionBuildingActor::ApplyCurrentStyleVisuals()
 		SpikeRidgeMesh1->SetVisibility(true);
 		SpikeRidgeMesh2->SetVisibility(true);
 
-		ApplyDynMaterial(BuildingMesh, SootBrick, 0.05f, 0.85f);
-		ApplyDynMaterial(Tier2Mesh, CastIron, 0.92f, 0.30f);
-		ApplyDynMaterial(TempleShrineMesh, CastIron, 0.95f, 0.25f);
-		ApplyDynMaterial(ShrineRoofMesh, IndustrialBrass, 0.96f, 0.22f);
-		ApplyDynMaterial(TowerLeftSpire, CastIron, 0.90f, 0.35f);
-		ApplyDynMaterial(TowerRightSpire, CastIron, 0.90f, 0.35f);
-		ApplyDynMaterial(FlyingButtressLeft, IndustrialBrass, 0.95f, 0.20f);
-		ApplyDynMaterial(FlyingButtressRight, IndustrialBrass, 0.95f, 0.20f);
-		ApplyDynMaterial(SpikeRidgeMesh1, CastIron, 0.92f, 0.30f);
-		ApplyDynMaterial(SpikeRidgeMesh2, CastIron, 0.92f, 0.30f);
-		ApplyDynMaterial(RampMesh, SootBrick, 0.05f, 0.85f);
-		ApplyDynMaterial(LeftRampMesh, CastIron, 0.90f, 0.32f);
-		ApplyDynMaterial(RightRampMesh, CastIron, 0.90f, 0.32f);
-		ApplyDynMaterial(GateArchMesh, IndustrialBrass, 0.96f, 0.20f);
-		ApplyDynMaterial(BannerLeftMesh, IndustrialBrass, 0.85f, 0.30f);
-		ApplyDynMaterial(BannerRightMesh, IndustrialBrass, 0.85f, 0.30f);
-		ApplyDynMaterial(BrazierMesh, CastIron, 0.95f, 0.25f);
+		ApplyMaterial(BuildingMesh, SootBrick, 0.05f, 0.85f);
+		ApplyMaterial(Tier2Mesh, CastIron, 0.92f, 0.30f);
+		ApplyMaterial(TempleShrineMesh, CastIron, 0.95f, 0.25f);
+		ApplyMaterial(ShrineRoofMesh, IndustrialBrass, 0.96f, 0.22f);
+		ApplyMaterial(TowerLeftSpire, CastIron, 0.90f, 0.35f);
+		ApplyMaterial(TowerRightSpire, CastIron, 0.90f, 0.35f);
+		ApplyMaterial(FlyingButtressLeft, IndustrialBrass, 0.95f, 0.20f);
+		ApplyMaterial(FlyingButtressRight, IndustrialBrass, 0.95f, 0.20f);
+		ApplyMaterial(SpikeRidgeMesh1, CastIron, 0.92f, 0.30f);
+		ApplyMaterial(SpikeRidgeMesh2, CastIron, 0.92f, 0.30f);
+		ApplyMaterial(RampMesh, SootBrick, 0.05f, 0.85f);
+		ApplyMaterial(LeftRampMesh, CastIron, 0.90f, 0.32f);
+		ApplyMaterial(RightRampMesh, CastIron, 0.90f, 0.32f);
+		ApplyMaterial(GateArchMesh, IndustrialBrass, 0.96f, 0.20f);
+		ApplyMaterial(BannerLeftMesh, IndustrialBrass, 0.85f, 0.30f);
+		ApplyMaterial(BannerRightMesh, IndustrialBrass, 0.85f, 0.30f);
+		ApplyMaterial(BrazierMesh, CastIron, 0.95f, 0.25f);
 
 		if (BrazierLight)
 		{
@@ -440,7 +387,7 @@ void ADominionBuildingActor::ApplyCurrentStyleVisuals()
 		}
 	}
 
-	ApplyDynMaterial(SelectionBoxMesh, GoldSelection, 0.5f, 0.3f);
+	ApplyMaterial(SelectionBoxMesh, GoldSelection, 0.5f, 0.3f);
 }
 
 void ADominionBuildingActor::Tick(float DeltaTime)

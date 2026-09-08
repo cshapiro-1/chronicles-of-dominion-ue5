@@ -369,6 +369,25 @@ UTexture2D* UDominionTextureFactory::CreateCedarWoodAlbedo(int32 Width, int32 He
 	return CreateTextureFromRGBA(Width, Height, Pixels, false);
 }
 
+UMaterialInstanceDynamic* UDominionTextureFactory::CreateDominionMaterial(UObject* Outer, const FLinearColor& BaseColor, float Metallic, float Roughness, const FLinearColor& EmissiveColor)
+{
+	static UMaterial* MasterMat = LoadObject<UMaterial>(nullptr, TEXT("/Game/Materials/M_DominionMaster.M_DominionMaster"));
+	if (!MasterMat)
+	{
+		MasterMat = LoadObject<UMaterial>(nullptr, TEXT("/Engine/EngineMaterials/DefaultMaterial.DefaultMaterial"));
+	}
+
+	UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(MasterMat, Outer);
+	if (DynMat)
+	{
+		DynMat->SetVectorParameterValue(TEXT("BaseColor"), BaseColor);
+		DynMat->SetVectorParameterValue(TEXT("EmissiveColor"), EmissiveColor);
+		DynMat->SetScalarParameterValue(TEXT("Metallic"), Metallic);
+		DynMat->SetScalarParameterValue(TEXT("Roughness"), Roughness);
+	}
+	return DynMat;
+}
+
 void UDominionTextureFactory::ApplyPBRMaps(UMaterialInstanceDynamic* DynMat, UTexture2D* AlbedoMap, UTexture2D* NormalMap, float Metallic, float Roughness)
 {
 	if (!DynMat) return;
