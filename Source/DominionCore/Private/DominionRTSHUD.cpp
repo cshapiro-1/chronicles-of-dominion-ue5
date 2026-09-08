@@ -43,85 +43,90 @@ void ADominionRTSHUD::DrawHUD()
 	// 1. Draw Top Resource & Imperial Grand Strategy Header Bar
 	const float ScreenW = Canvas->SizeX;
 	const float ScreenH = Canvas->SizeY;
-	const float TopBarH = 50.0f;
+	const float TopBarH = 52.0f;
 
-	// Top Bar Dark Gold Translucent Background
-	FCanvasTileItem TopBarBG(FVector2D(0, 0), FVector2D(ScreenW, TopBarH), FLinearColor(0.03f, 0.04f, 0.06f, 0.96f));
+	// Top Bar Dark Weathered Slate Translucent Background
+	FCanvasTileItem TopBarBG(FVector2D(0, 0), FVector2D(ScreenW, TopBarH), FLinearColor(0.03f, 0.04f, 0.06f, 0.97f));
 	TopBarBG.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(TopBarBG);
 
 	// Top Bar Gold Border Line
 	Canvas->K2_DrawLine(FVector2D(0, TopBarH), FVector2D(ScreenW, TopBarH), 2.5f, FLinearColor(0.92f, 0.72f, 0.22f, 1.0f));
 
-	// Resource Badges
-	const FString ResBadges[] = {
-		TEXT("GRAIN: 1,420 (+45/m)"),
-		TEXT("GOLD: 5,200"),
-		TEXT("BRONZE: 650"),
-		TEXT("POP: 48/80")
+	// Group 1: Core Physical Commodities (Left)
+	struct FResourceBadge
+	{
+		FString Label;
+		FLinearColor Color;
 	};
 
-	float ResX = 18.0f;
-	for (const FString& Badge : ResBadges)
+	const FResourceBadge ResBadges[] = {
+		{ TEXT("GRAIN: 1,420 (+45/m)"), FLinearColor(1.0f, 0.90f, 0.40f) },
+		{ TEXT("TIMBER: 850 (+18/m)"), FLinearColor(0.85f, 0.65f, 0.40f) },
+		{ TEXT("STONE: 1,200 (+25/m)"), FLinearColor(0.80f, 0.85f, 0.90f) },
+		{ TEXT("BRONZE: 650 (+12/m)"), FLinearColor(0.95f, 0.65f, 0.25f) },
+		{ TEXT("GOLD: 5,200 (+80/m)"), FLinearColor(1.0f, 0.84f, 0.0f) }
+	};
+
+	float ResX = 14.0f;
+	for (const FResourceBadge& Badge : ResBadges)
 	{
-		float BadgeW = Badge.Len() * 8.0f + 16.0f;
-		FCanvasTileItem BadgeBG(FVector2D(ResX, 8.0f), FVector2D(BadgeW, 34.0f), FLinearColor(0.08f, 0.11f, 0.16f, 0.85f));
+		float BadgeW = Badge.Label.Len() * 7.4f + 14.0f;
+		FCanvasTileItem BadgeBG(FVector2D(ResX, 8.0f), FVector2D(BadgeW, 36.0f), FLinearColor(0.07f, 0.09f, 0.13f, 0.88f));
 		Canvas->DrawItem(BadgeBG);
 
-		FCanvasBoxItem BadgeBorder(FVector2D(ResX, 8.0f), FVector2D(BadgeW, 34.0f));
-		BadgeBorder.SetColor(FLinearColor(0.35f, 0.45f, 0.55f, 0.5f));
+		FCanvasBoxItem BadgeBorder(FVector2D(ResX, 8.0f), FVector2D(BadgeW, 36.0f));
+		BadgeBorder.SetColor(Badge.Color * 0.6f);
 		BadgeBorder.LineThickness = 1.0f;
 		Canvas->DrawItem(BadgeBorder);
 
-		DrawShadowText(DefaultFont, Badge, ResX + 8.0f, 16.0f, 0.95f, FLinearColor(1.0f, 0.88f, 0.45f, 1.0f));
-		ResX += BadgeW + 8.0f;
+		DrawShadowText(DefaultFont, Badge.Label, ResX + 7.0f, 17.0f, 0.88f, Badge.Color);
+		ResX += BadgeW + 6.0f;
 	}
 
-	// Dynamic Logistics Status Badge
+	// Group 2: Demographics & Dynamic Supply Line (Center-Left)
+	const FString ManpowerText = TEXT("MANPOWER: 6,500 / 15,000");
+	float ManpowerW = ManpowerText.Len() * 7.4f + 14.0f;
+	FCanvasTileItem ManpowerBG(FVector2D(ResX, 8.0f), FVector2D(ManpowerW, 36.0f), FLinearColor(0.07f, 0.11f, 0.15f, 0.88f));
+	Canvas->DrawItem(ManpowerBG);
+	FCanvasBoxItem ManpowerBorder(FVector2D(ResX, 8.0f), FVector2D(ManpowerW, 36.0f));
+	ManpowerBorder.SetColor(FLinearColor(0.35f, 0.65f, 0.95f, 0.8f));
+	Canvas->DrawItem(ManpowerBorder);
+	DrawShadowText(DefaultFont, ManpowerText, ResX + 7.0f, 17.0f, 0.88f, FLinearColor(0.65f, 0.88f, 1.0f));
+	ResX += ManpowerW + 6.0f;
+
+	// Dynamic Logistics & Baggage Train Status Badge
 	UDominionSupplyLineSubsystem* SupplySys = GetWorld() ? GetWorld()->GetSubsystem<UDominionSupplyLineSubsystem>() : nullptr;
 	bool bSupplyActive = SupplySys ? SupplySys->IsSupplyLineActive() : true;
-	FString LogisticsBadge = bSupplyActive ? TEXT("SUPPLY: 100% [T]") : TEXT("SUPPLY: SEVERED [T]");
-	FLinearColor SupplyCol = bSupplyActive ? FLinearColor(0.2f, 0.95f, 0.4f, 1.0f) : FLinearColor(1.0f, 0.25f, 0.15f, 1.0f);
+	FString LogisticsBadge = bSupplyActive ? TEXT("SUPPLY: 100% [42 Days] [T]") : TEXT("SUPPLY: SEVERED [T]");
+	FLinearColor SupplyCol = bSupplyActive ? FLinearColor(0.25f, 0.95f, 0.45f, 1.0f) : FLinearColor(1.0f, 0.25f, 0.15f, 1.0f);
 
-	float LogW = LogisticsBadge.Len() * 8.0f + 16.0f;
-	FCanvasTileItem LogBG(FVector2D(ResX, 8.0f), FVector2D(LogW, 34.0f), FLinearColor(0.08f, 0.11f, 0.16f, 0.85f));
+	float LogW = LogisticsBadge.Len() * 7.4f + 14.0f;
+	FCanvasTileItem LogBG(FVector2D(ResX, 8.0f), FVector2D(LogW, 36.0f), FLinearColor(0.07f, 0.09f, 0.13f, 0.88f));
 	Canvas->DrawItem(LogBG);
-	FCanvasBoxItem LogBorder(FVector2D(ResX, 8.0f), FVector2D(LogW, 34.0f));
+	FCanvasBoxItem LogBorder(FVector2D(ResX, 8.0f), FVector2D(LogW, 36.0f));
 	LogBorder.SetColor(SupplyCol);
 	LogBorder.LineThickness = 1.2f;
 	Canvas->DrawItem(LogBorder);
-	DrawShadowText(DefaultFont, LogisticsBadge, ResX + 8.0f, 16.0f, 0.95f, SupplyCol);
-	ResX += LogW + 14.0f;
+	DrawShadowText(DefaultFont, LogisticsBadge, ResX + 7.0f, 17.0f, 0.88f, SupplyCol);
+	ResX += LogW + 12.0f;
 
-	// --- 3-ESTATE POWER TRIAD & FROSTPUNK HOPE/DISCONTENT GAUGES ---
+	// --- Group 3: 3-ESTATE POWER TRIAD & FROSTPUNK HOPE/DISCONTENT GAUGES ---
 	UDominionPoliticalEstatesSystem* Estates = GetWorld() ? GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>() : nullptr;
 	if (Estates)
 	{
-		// 1. Hope Meter
-		FString HopeText = FString::Printf(TEXT("HOPE: %.0f%%"), Estates->GetHope());
-		FLinearColor HopeCol = (Estates->GetHope() > 40.0f) ? FLinearColor(0.25f, 0.85f, 1.0f) : FLinearColor(0.95f, 0.35f, 0.2f);
-		float HopeW = HopeText.Len() * 8.5f + 18.0f;
-		FCanvasTileItem HopeBG(FVector2D(ResX, 8.0f), FVector2D(HopeW, 34.0f), FLinearColor(0.06f, 0.12f, 0.18f, 0.9f));
-		Canvas->DrawItem(HopeBG);
-		FCanvasBoxItem HopeBorder(FVector2D(ResX, 8.0f), FVector2D(HopeW, 34.0f));
-		HopeBorder.SetColor(HopeCol);
-		Canvas->DrawItem(HopeBorder);
-		DrawShadowText(DefaultFont, HopeText, ResX + 8.0f, 16.0f, 0.95f, HopeCol);
-		ResX += HopeW + 8.0f;
+		// Hope vs Discontent Dual Gauge
+		FString HopeDiscText = FString::Printf(TEXT("HOPE: %.0f%%  vs  DISCONTENT: %.0f%%"), Estates->GetHope(), Estates->GetDiscontent());
+		float HDWidth = HopeDiscText.Len() * 7.5f + 16.0f;
+		FCanvasTileItem HDBG(FVector2D(ResX, 8.0f), FVector2D(HDWidth, 36.0f), FLinearColor(0.06f, 0.08f, 0.12f, 0.92f));
+		Canvas->DrawItem(HDBG);
+		FCanvasBoxItem HDBorder(FVector2D(ResX, 8.0f), FVector2D(HDWidth, 36.0f));
+		HDBorder.SetColor(FLinearColor(0.92f, 0.72f, 0.22f, 0.75f));
+		Canvas->DrawItem(HDBorder);
+		DrawShadowText(DefaultFont, HopeDiscText, ResX + 8.0f, 17.0f, 0.88f, FLinearColor(0.35f, 0.90f, 1.0f));
+		ResX += HDWidth + 8.0f;
 
-		// 2. Discontent Meter
-		FString DiscText = FString::Printf(TEXT("DISCONTENT: %.0f%%"), Estates->GetDiscontent());
-		FLinearColor DiscCol = (Estates->GetDiscontent() < 50.0f) ? FLinearColor(0.85f, 0.85f, 0.85f) : FLinearColor(1.0f, 0.2f, 0.2f);
-		float DiscW = DiscText.Len() * 8.5f + 18.0f;
-		FCanvasTileItem DiscBG(FVector2D(ResX, 8.0f), FVector2D(DiscW, 34.0f), FLinearColor(0.18f, 0.06f, 0.06f, 0.9f));
-		Canvas->DrawItem(DiscBG);
-		FCanvasBoxItem DiscBorder(FVector2D(ResX, 8.0f), FVector2D(DiscW, 34.0f));
-		DiscBorder.SetColor(DiscCol);
-		Canvas->DrawItem(DiscBorder);
-		DrawShadowText(DefaultFont, DiscText, ResX + 8.0f, 16.0f, 0.95f, DiscCol);
-		ResX += DiscW + 14.0f;
-
-		// 3. The 3 Estates Badges
+		// 3 Estates Badges
 		struct FEstateDisplay
 		{
 			FString Label;
@@ -130,34 +135,34 @@ void ADominionRTSHUD::DrawHUD()
 		};
 
 		FEstateDisplay EstateBadges[3] = {
-			{ FString::Printf(TEXT("ALTAR (CHURCH): %.0f%%"), Estates->GetPriesthoodLoyalty()), Estates->GetPriesthoodLoyalty(), FLinearColor(1.0f, 0.88f, 0.25f) },
-			{ FString::Printf(TEXT("THRONE (NOBLES): %.0f%%"), Estates->GetNobilityLoyalty()), Estates->GetNobilityLoyalty(), FLinearColor(0.95f, 0.35f, 0.35f) },
-			{ FString::Printf(TEXT("PEOPLE (MASSES): %.0f%%"), Estates->GetMassesLoyalty()), Estates->GetMassesLoyalty(), FLinearColor(0.35f, 0.95f, 0.55f) }
+			{ FString::Printf(TEXT("ALTAR: %.0f%%"), Estates->GetPriesthoodLoyalty()), Estates->GetPriesthoodLoyalty(), FLinearColor(1.0f, 0.88f, 0.25f) },
+			{ FString::Printf(TEXT("THRONE: %.0f%%"), Estates->GetNobilityLoyalty()), Estates->GetNobilityLoyalty(), FLinearColor(0.95f, 0.40f, 0.40f) },
+			{ FString::Printf(TEXT("MASSES: %.0f%%"), Estates->GetMassesLoyalty()), Estates->GetMassesLoyalty(), FLinearColor(0.35f, 0.95f, 0.55f) }
 		};
 
 		for (const FEstateDisplay& Est : EstateBadges)
 		{
-			float EstW = Est.Label.Len() * 7.8f + 16.0f;
-			FCanvasTileItem EstBG(FVector2D(ResX, 8.0f), FVector2D(EstW, 34.0f), FLinearColor(0.08f, 0.10f, 0.14f, 0.88f));
+			float EstW = Est.Label.Len() * 7.4f + 12.0f;
+			FCanvasTileItem EstBG(FVector2D(ResX, 8.0f), FVector2D(EstW, 36.0f), FLinearColor(0.08f, 0.10f, 0.14f, 0.88f));
 			Canvas->DrawItem(EstBG);
-			FCanvasBoxItem EstBorder(FVector2D(ResX, 8.0f), FVector2D(EstW, 34.0f));
+			FCanvasBoxItem EstBorder(FVector2D(ResX, 8.0f), FVector2D(EstW, 36.0f));
 			EstBorder.SetColor(Est.Color * 0.7f);
 			Canvas->DrawItem(EstBorder);
-			DrawShadowText(DefaultFont, Est.Label, ResX + 8.0f, 16.0f, 0.90f, Est.Color);
-			ResX += EstW + 6.0f;
+			DrawShadowText(DefaultFont, Est.Label, ResX + 6.0f, 17.0f, 0.86f, Est.Color);
+			ResX += EstW + 5.0f;
 		}
 	}
 
 	// Epoch Badge (Right Aligned)
 	const FString EpochText = TEXT("EPOCH I: BRONZE AGE");
-	const float EpochW = 200.0f;
-	const float EpochX = ScreenW - EpochW - 18.0f;
-	FCanvasTileItem EpochBG(FVector2D(EpochX, 8.0f), FVector2D(EpochW, 34.0f), FLinearColor(0.08f, 0.12f, 0.20f, 0.9f));
+	const float EpochW = 190.0f;
+	const float EpochX = ScreenW - EpochW - 14.0f;
+	FCanvasTileItem EpochBG(FVector2D(EpochX, 8.0f), FVector2D(EpochW, 36.0f), FLinearColor(0.08f, 0.12f, 0.20f, 0.9f));
 	Canvas->DrawItem(EpochBG);
-	FCanvasBoxItem EpochBorder(FVector2D(EpochX, 8.0f), FVector2D(EpochW, 34.0f));
+	FCanvasBoxItem EpochBorder(FVector2D(EpochX, 8.0f), FVector2D(EpochW, 36.0f));
 	EpochBorder.SetColor(FLinearColor(0.92f, 0.72f, 0.22f, 0.8f));
 	Canvas->DrawItem(EpochBorder);
-	DrawShadowText(MediumFont, EpochText, EpochX + 12.0f, 14.0f, 0.9f, FLinearColor(0.45f, 0.88f, 1.0f, 1.0f));
+	DrawShadowText(MediumFont, EpochText, EpochX + 10.0f, 15.0f, 0.88f, FLinearColor(0.45f, 0.88f, 1.0f, 1.0f));
 
 	// Active Imperial Edict Banner under Top Header
 	if (Estates && Estates->GetActiveEdictRemainingTime() > 0.0f)
@@ -185,109 +190,41 @@ void ADominionRTSHUD::DrawHUD()
 		Canvas->DrawItem(CrisisBG);
 
 		FCanvasBoxItem CrisisBorder(FVector2D(CrisisX, CrisisY), FVector2D(CrisisW, CrisisH));
-		CrisisBorder.SetColor(FLinearColor(1.0f, 0.85f, 0.1f));
-		CrisisBorder.LineThickness = 2.5f;
+		CrisisBorder.SetColor(FLinearColor(1.0f, 0.2f, 0.2f));
+		CrisisBorder.LineThickness = 2.0f;
 		Canvas->DrawItem(CrisisBorder);
 
-		DrawShadowText(MediumFont, TEXT("[!] IMPERIAL CRISIS TRIGGERED"), CrisisX + 16.0f, CrisisY + 8.0f, 1.05f, FLinearColor(1.0f, 0.9f, 0.2f));
-		DrawShadowText(DefaultFont, Estates->GetRecentCrisisNotification(), CrisisX + 16.0f, CrisisY + 34.0f, 0.95f, FLinearColor::White);
+		FString CrisisMsg = Estates->GetRecentCrisisNotification().IsEmpty() ? TEXT("[!] IMPERIAL CRISIS TRIGGERED") : Estates->GetRecentCrisisNotification().ToUpper();
+		DrawShadowText(MediumFont, CrisisMsg, CrisisX + 24.0f, CrisisY + 12.0f, 1.05f, FLinearColor(1.0f, 0.95f, 0.4f));
+		DrawShadowText(DefaultFont, TEXT("Press [F1-F4] to enact Imperial Edicts or appease the striking estate!"), CrisisX + 24.0f, CrisisY + 38.0f, 0.95f, FLinearColor(1.0f, 0.85f, 0.85f));
 	}
 
-	// 2. Draw Interactive Tutorial / Campaign Quest Card
-	UDominionTutorialSubsystem* Tutorial = GetWorld() ? GetWorld()->GetSubsystem<UDominionTutorialSubsystem>() : nullptr;
-	if (Tutorial && bShowTutorialCard)
-	{
-		const float TutX = 24.0f;
-		const float TutY = TopBarH + 16.0f;
-		const float TutW = 720.0f;
-		const float TutH = 114.0f;
-
-		// Card Background
-		FCanvasTileItem TutBG(FVector2D(TutX, TutY), FVector2D(TutW, TutH), FLinearColor(0.03f, 0.04f, 0.07f, 0.94f));
-		TutBG.BlendMode = SE_BLEND_Translucent;
-		Canvas->DrawItem(TutBG);
-
-		// Gold Filigree Border
-		FCanvasBoxItem TutBorder(FVector2D(TutX, TutY), FVector2D(TutW, TutH));
-		TutBorder.SetColor(FLinearColor(0.92f, 0.72f, 0.22f, 1.0f));
-		TutBorder.LineThickness = 2.0f;
-		Canvas->DrawItem(TutBorder);
-
-		// Header Step Pill
-		FString StepHeader = FString::Printf(TEXT("[TUTORIAL STEP %d / %d]   %s"), Tutorial->GetStepNumber(), Tutorial->GetTotalSteps(), *Tutorial->GetObjectiveTitle());
-		DrawShadowText(MediumFont, StepHeader, TutX + 18.0f, TutY + 12.0f, 0.95f, FLinearColor(1.0f, 0.84f, 0.0f, 1.0f));
-
-		// Divider Line
-		Canvas->K2_DrawLine(FVector2D(TutX + 16.0f, TutY + 38.0f), FVector2D(TutX + TutW - 16.0f, TutY + 38.0f), 1.0f, FLinearColor(0.4f, 0.5f, 0.6f, 0.4f));
-
-		// Objective Instructions (Generous vertical spacing)
-		DrawShadowText(DefaultFont, Tutorial->GetObjectiveDescription(), TutX + 18.0f, TutY + 48.0f, 1.05f, FLinearColor::White);
-
-		// Advisor Quote (Amber/Cyan dialogue)
-		DrawShadowText(DefaultFont, Tutorial->GetAdvisorAdvice(), TutX + 18.0f, TutY + 80.0f, 0.95f, FLinearColor(0.55f, 0.88f, 1.0f, 0.95f));
-	}
-
-	// 3. Draw Bottom Command Console (AoE2 3-Section Frame)
-	const float ConsoleH = 180.0f;
+	// 2. Draw Bottom Command Console (AoE2 / Frostpunk Dark Bronze Frame)
+	const float ConsoleH = 210.0f;
 	const float ConsoleY = ScreenH - ConsoleH;
 
-	// Console Background Ribbon
-	FCanvasTileItem ConsoleBG(FVector2D(0, ConsoleY), FVector2D(ScreenW, ConsoleH), FLinearColor(0.03f, 0.04f, 0.06f, 0.97f));
+	// Dark Hewn Stone & Bronze Console Frame
+	FCanvasTileItem ConsoleBG(FVector2D(0, ConsoleY), FVector2D(ScreenW, ConsoleH), FLinearColor(0.05f, 0.04f, 0.03f, 0.98f));
 	ConsoleBG.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(ConsoleBG);
 
-	Canvas->K2_DrawLine(FVector2D(0, ConsoleY), FVector2D(ScreenW, ConsoleY), 3.0f, FLinearColor(0.92f, 0.72f, 0.22f, 1.0f));
+	// Heavy Carved Brass Top Border
+	Canvas->K2_DrawLine(FVector2D(0, ConsoleY), FVector2D(ScreenW, ConsoleY), 3.5f, FLinearColor(0.85f, 0.65f, 0.22f, 1.0f));
+	Canvas->K2_DrawLine(FVector2D(0, ConsoleY + 3.0f), FVector2D(ScreenW, ConsoleY + 3.0f), 1.0f, FLinearColor(0.25f, 0.18f, 0.08f, 0.9f));
 
-	// --- SECTION 1: LEFT MINIMAP RADAR ---
-	const float MinimapMargin = 14.0f;
-	const float MinimapW = 230.0f;
-	const float MinimapH = ConsoleH - (MinimapMargin * 2.0f);
-	FVector2D MinimapPos(MinimapMargin, ConsoleY + MinimapMargin);
+	// --- SECTION 1 (LEFT): 3D UNIT PORTRAIT & ATTRIBUTES CARD ---
+	const float CardX = 24.0f;
+	const float CardY = ConsoleY + 16.0f;
+	const float CardW = 340.0f;
+	const float CardH = ConsoleH - 32.0f;
 
-	FCanvasTileItem MinimapBG(MinimapPos, FVector2D(MinimapW, MinimapH), FLinearColor(0.05f, 0.08f, 0.12f, 1.0f));
-	Canvas->DrawItem(MinimapBG);
+	FCanvasTileItem CardBG(FVector2D(CardX, CardY), FVector2D(CardW, CardH), FLinearColor(0.09f, 0.07f, 0.05f, 0.95f));
+	Canvas->DrawItem(CardBG);
 
-	FCanvasBoxItem MinimapBorder(MinimapPos, FVector2D(MinimapW, MinimapH));
-	MinimapBorder.SetColor(FLinearColor(0.92f, 0.72f, 0.22f, 1.0f));
-	MinimapBorder.LineThickness = 2.0f;
-	Canvas->DrawItem(MinimapBorder);
-
-	// Minimap Label & River Curve
-	DrawShadowText(DefaultFont, TEXT("STRATEGIC RADAR // SECTOR 07"), MinimapPos.X + 10.0f, MinimapPos.Y + 8.0f, 0.95f, FLinearColor(1.0f, 0.85f, 0.3f, 1.0f));
-	Canvas->K2_DrawLine(MinimapPos + FVector2D(20, 120), MinimapPos + FVector2D(120, 60), 3.0f, FLinearColor(0.15f, 0.45f, 0.85f, 0.8f));
-	Canvas->K2_DrawLine(MinimapPos + FVector2D(120, 60), MinimapPos + FVector2D(200, 20), 3.0f, FLinearColor(0.15f, 0.45f, 0.85f, 0.8f));
-
-	// Draw Real-Time Radar Blips for all Units
-	TArray<AActor*> AllUnits;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADominionUnitActor::StaticClass(), AllUnits);
-	for (AActor* Act : AllUnits)
-	{
-		if (ADominionUnitActor* Unit = Cast<ADominionUnitActor>(Act))
-		{
-			FVector UnitLoc = Unit->GetActorLocation();
-			float BlipX = MinimapPos.X + (MinimapW * 0.5f) + (UnitLoc.X / 100.0f);
-			float BlipY = MinimapPos.Y + (MinimapH * 0.5f) + (UnitLoc.Y / 100.0f);
-			BlipX = FMath::Clamp(BlipX, MinimapPos.X + 6.0f, MinimapPos.X + MinimapW - 12.0f);
-			BlipY = FMath::Clamp(BlipY, MinimapPos.Y + 6.0f, MinimapPos.Y + MinimapH - 12.0f);
-
-			FLinearColor BlipCol = (Unit->TeamID == 0) ? FLinearColor(0.2f, 0.7f, 1.0f) : FLinearColor(1.0f, 0.2f, 0.2f);
-			FCanvasTileItem Blip(FVector2D(BlipX, BlipY), FVector2D(7.0f, 7.0f), BlipCol);
-			Canvas->DrawItem(Blip);
-		}
-	}
-
-	// --- SECTION 2: CENTER SELECTION CARD ---
-	const float CenterX = MinimapPos.X + MinimapW + 20.0f;
-	const float CenterW = ScreenW - CenterX - 440.0f;
-	FVector2D CenterPos(CenterX, ConsoleY + MinimapMargin);
-
-	FCanvasTileItem CenterPanel(CenterPos, FVector2D(CenterW, MinimapH), FLinearColor(0.04f, 0.06f, 0.09f, 0.92f));
-	Canvas->DrawItem(CenterPanel);
-
-	FCanvasBoxItem CenterBorder(CenterPos, FVector2D(CenterW, MinimapH));
-	CenterBorder.SetColor(FLinearColor(0.4f, 0.5f, 0.6f, 0.6f));
-	CenterBorder.LineThickness = 1.5f;
-	Canvas->DrawItem(CenterBorder);
+	FCanvasBoxItem CardBorder(FVector2D(CardX, CardY), FVector2D(CardW, CardH));
+	CardBorder.SetColor(FLinearColor(0.75f, 0.58f, 0.22f, 0.9f));
+	CardBorder.LineThickness = 2.0f;
+	Canvas->DrawItem(CardBorder);
 
 	ADominionRTSPlayerController* PC = Cast<ADominionRTSPlayerController>(GetOwningPlayerController());
 	if (PC && PC->GetSelectedUnits().Num() > 0)
@@ -296,105 +233,150 @@ void ADominionRTSHUD::DrawHUD()
 		if (IsValid(SelUnit))
 		{
 			// Portrait Box
-			const float PortW = 86.0f;
-			const float PortH = MinimapH - 24.0f;
-			FCanvasTileItem PortraitBG(CenterPos + FVector2D(12, 12), FVector2D(PortW, PortH), FLinearColor(0.10f, 0.15f, 0.22f));
-			Canvas->DrawItem(PortraitBG);
-
-			FCanvasBoxItem PortBorder(CenterPos + FVector2D(12, 12), FVector2D(PortW, PortH));
-			PortBorder.SetColor(FLinearColor(0.92f, 0.72f, 0.22f, 0.7f));
-			PortBorder.LineThickness = 1.5f;
+			const float PortW = 80.0f;
+			const float PortH = CardH - 24.0f;
+			FCanvasTileItem PortBG(FVector2D(CardX + 12.0f, CardY + 12.0f), FVector2D(PortW, PortH), FLinearColor(0.14f, 0.11f, 0.08f));
+			Canvas->DrawItem(PortBG);
+			FCanvasBoxItem PortBorder(FVector2D(CardX + 12.0f, CardY + 12.0f), FVector2D(PortW, PortH));
+			PortBorder.SetColor(FLinearColor(0.92f, 0.72f, 0.22f));
 			Canvas->DrawItem(PortBorder);
 
-			DrawShadowText(DefaultFont, TEXT("[UNIT]"), CenterPos.X + 24.0f, CenterPos.Y + 56.0f, 1.25f, FLinearColor(1.0f, 0.85f, 0.2f, 1.0f));
+			DrawShadowText(MediumFont, TEXT("⚔️"), CardX + 38.0f, CardY + 60.0f, 1.4f, FLinearColor(1.0f, 0.85f, 0.2f));
 
-			// Unit Title & Subtitle
-			const float TextLeft = CenterPos.X + PortW + 28.0f;
-			DrawShadowText(MediumFont, SelUnit->UnitName.ToUpper(), TextLeft, CenterPos.Y + 14.0f, 1.15f, FLinearColor::White);
-			FString Subtitle = FString::Printf(TEXT("Regiment Size: %d units   |   Stance: %s"), PC->GetSelectedUnits().Num(), SelUnit->bInShieldWall ? TEXT("PHALANX BRACED (+40% Armor)") : TEXT("OPEN CHARGE"));
-			DrawShadowText(DefaultFont, Subtitle, TextLeft, CenterPos.Y + 44.0f, 1.05f, FLinearColor(0.75f, 0.85f, 0.95f, 1.0f));
+			// Unit Info Text
+			const float TextX = CardX + PortW + 20.0f;
+			DrawShadowText(MediumFont, SelUnit->UnitName.ToUpper(), TextX, CardY + 10.0f, 1.02f, FLinearColor::White);
+			FString SubTitle = FString::Printf(TEXT("Rank: Veteran  |  Squad: %d"), PC->GetSelectedUnits().Num());
+			DrawShadowText(DefaultFont, SubTitle, TextX, CardY + 30.0f, 0.82f, FLinearColor(0.75f, 0.85f, 0.95f));
 
 			// Health Bar
 			float HPPercent = FMath::Clamp(SelUnit->Health / SelUnit->MaxHealth, 0.0f, 1.0f);
-			const float BarW = 320.0f;
-			const float BarH = 18.0f;
-			FCanvasTileItem HPBarBG(FVector2D(TextLeft, CenterPos.Y + 74.0f), FVector2D(BarW, BarH), FLinearColor(0.15f, 0.15f, 0.15f));
-			Canvas->DrawItem(HPBarBG);
-
-			FLinearColor HPCol = (HPPercent > 0.5f) ? FLinearColor(0.2f, 0.85f, 0.3f) : FLinearColor(0.9f, 0.2f, 0.2f);
-			FCanvasTileItem HPBarFill(FVector2D(TextLeft, CenterPos.Y + 74.0f), FVector2D(BarW * HPPercent, BarH), HPCol);
-			Canvas->DrawItem(HPBarFill);
-
-			FString HPText = FString::Printf(TEXT("HEALTH: %.0f / %.0f (%.0f%%)"), SelUnit->Health, SelUnit->MaxHealth, HPPercent * 100.0f);
-			DrawShadowText(DefaultFont, HPText, TextLeft + 8.0f, CenterPos.Y + 76.0f, 0.95f, FLinearColor::White);
+			const float BarW = 200.0f;
+			FCanvasTileItem HPBG(FVector2D(TextX, CardY + 50.0f), FVector2D(BarW, 11.0f), FLinearColor(0.15f, 0.15f, 0.15f));
+			Canvas->DrawItem(HPBG);
+			FCanvasTileItem HPFill(FVector2D(TextX, CardY + 50.0f), FVector2D(BarW * HPPercent, 11.0f), FLinearColor(0.2f, 0.85f, 0.35f));
+			Canvas->DrawItem(HPFill);
+			DrawShadowText(DefaultFont, FString::Printf(TEXT("HP: %.0f / %.0f"), SelUnit->Health, SelUnit->MaxHealth), TextX + 4.0f, CardY + 50.0f, 0.70f, FLinearColor::White);
 
 			// Morale Bar
-			FCanvasTileItem MoraleBG(FVector2D(TextLeft, CenterPos.Y + 102.0f), FVector2D(BarW, BarH), FLinearColor(0.15f, 0.15f, 0.15f));
+			FCanvasTileItem MoraleBG(FVector2D(TextX, CardY + 66.0f), FVector2D(BarW, 11.0f), FLinearColor(0.15f, 0.15f, 0.15f));
 			Canvas->DrawItem(MoraleBG);
-			FCanvasTileItem MoraleFill(FVector2D(TextLeft, CenterPos.Y + 102.0f), FVector2D(BarW * (SelUnit->Morale / 100.0f), BarH), FLinearColor(0.2f, 0.6f, 0.95f));
+			FCanvasTileItem MoraleFill(FVector2D(TextX, CardY + 66.0f), FVector2D(BarW * 0.95f, 11.0f), FLinearColor(0.2f, 0.65f, 1.0f));
 			Canvas->DrawItem(MoraleFill);
-			FString MoraleText = FString::Printf(TEXT("MORALE: %.0f%% [STEADFAST]   |   SUPPLY: 28 DAYS"), SelUnit->Morale);
-			DrawShadowText(DefaultFont, MoraleText, TextLeft + 8.0f, CenterPos.Y + 104.0f, 0.95f, FLinearColor::White);
+			DrawShadowText(DefaultFont, TEXT("MORALE: 95% (Steady)"), TextX + 4.0f, CardY + 66.0f, 0.70f, FLinearColor::White);
+
+			// Stats: ATT / DEF / SPEED
+			FString StatStr = FString::Printf(TEXT("ATT: %.0f   •   DEF: 35   •   SPD: %.0f"), SelUnit->AttackPower, SelUnit->MoveSpeed);
+			DrawShadowText(DefaultFont, StatStr, TextX, CardY + 86.0f, 0.80f, FLinearColor(1.0f, 0.88f, 0.45f));
+
+			// Stance description & Supply Days
+			FString StanceStr = SelUnit->bInShieldWall ? TEXT("Stance: Phalanx (+40% Armor)") : TEXT("Stance: Open Order");
+			DrawShadowText(DefaultFont, StanceStr, TextX, CardY + 106.0f, 0.78f, FLinearColor(0.65f, 0.85f, 1.0f));
+
+			FString SupplyStr = TEXT("Supply Reserve: 42 Days Food");
+			DrawShadowText(DefaultFont, SupplyStr, TextX, CardY + 124.0f, 0.75f, FLinearColor(0.55f, 0.95f, 0.55f));
 		}
-	}
-	else if (PC && PC->GetSelectedBuilding())
-	{
-		ADominionBuildingActor* Bld = PC->GetSelectedBuilding();
-		DrawShadowText(MediumFont, Bld->BuildingName.ToUpper(), CenterPos.X + 24.0f, CenterPos.Y + 18.0f, 1.25f, FLinearColor(1.0f, 0.85f, 0.2f, 1.0f));
-		DrawShadowText(DefaultFont, TEXT("Town Center & Civic Granary   |   HP: 2,500 / 2,500"), CenterPos.X + 24.0f, CenterPos.Y + 52.0f, 1.15f, FLinearColor::White);
-		DrawShadowText(DefaultFont, TEXT("Press [A] to Train Spearman   •   Press [S] to Train Chariot   •   Press [D] for Ox-Cart"), CenterPos.X + 24.0f, CenterPos.Y + 90.0f, 1.1f, FLinearColor(0.45f, 0.9f, 1.0f, 1.0f));
 	}
 	else
 	{
-		DrawShadowText(MediumFont, TEXT("NO SELECTION // CLICK A REGIMENT OR DRAG-BOX ON TERRAIN"), CenterPos.X + 24.0f, CenterPos.Y + 42.0f, 1.1f, FLinearColor(0.85f, 0.85f, 0.85f, 1.0f));
-		DrawShadowText(DefaultFont, TEXT("WASD: Pan   •   Q/E: Rotate   •   [1-4]: Formations   •   [F1-F4]: Imperial Edicts"), CenterPos.X + 24.0f, CenterPos.Y + 78.0f, 1.1f, FLinearColor(0.92f, 0.72f, 0.22f, 1.0f));
+		DrawShadowText(MediumFont, TEXT("IMPERIAL COMMAND"), CardX + 20.0f, CardY + 24.0f, 1.05f, FLinearColor(1.0f, 0.85f, 0.2f));
+		DrawShadowText(DefaultFont, TEXT("Select a Legion regiment or building"), CardX + 20.0f, CardY + 54.0f, 0.90f, FLinearColor::White);
+		DrawShadowText(DefaultFont, TEXT("WASD: Pan   •   Q/E: Rotate"), CardX + 20.0f, CardY + 84.0f, 0.85f, FLinearColor(0.75f, 0.75f, 0.75f));
 	}
 
-	// --- SECTION 3: RIGHT ACTION GRID (Formations, Units & Imperial Edicts) ---
-	const float GridX = ScreenW - 400.0f;
-	const float GridY = ConsoleY + MinimapMargin;
-	const float BtnW = 84.0f;
-	const float BtnH = 68.0f;
-	const float Gap = 10.0f;
+	// --- SECTION 2 (CENTER): FORMATIONS & EDICTS COMMAND GRID ---
+	const float GridLeft = CardX + CardW + 28.0f;
+	const float GridTop = ConsoleY + 16.0f;
 
-	struct FActionBtn
-	{
-		const TCHAR* Key;
-		const TCHAR* Action;
+	// Formations Header
+	DrawShadowText(DefaultFont, TEXT("TACTICAL FORMATIONS"), GridLeft, GridTop + 2.0f, 0.85f, FLinearColor(1.0f, 0.85f, 0.25f));
+
+	struct FCmdBtn { const TCHAR* Key; const TCHAR* Label; const TCHAR* Icon; };
+	const FCmdBtn Formations[4] = {
+		{ TEXT("[1]"), TEXT("LINE"), TEXT("━") },
+		{ TEXT("[2]"), TEXT("SQUARE"), TEXT("⧈") },
+		{ TEXT("[3]"), TEXT("PHALANX"), TEXT("🛡️") },
+		{ TEXT("[4]"), TEXT("SKIRMISH"), TEXT("⚔️") }
 	};
 
-	const FActionBtn Actions[8] = {
-		{ TEXT("[1]"), TEXT("PHALANX") },
-		{ TEXT("[2]"), TEXT("WEDGE") },
-		{ TEXT("[3]"), TEXT("SKIRMISH") },
-		{ TEXT("[4]"), TEXT("SQUARE") },
-		{ TEXT("[F1]"), TEXT("TITHE") },
-		{ TEXT("[F2]"), TEXT("CORVEE") },
-		{ TEXT("[F3]"), TEXT("DOLE") },
-		{ TEXT("[F4]"), TEXT("GAMES") }
-	};
-
-	for (int32 i = 0; i < 8; ++i)
+	const float BtnW = 75.0f;
+	const float BtnH = 55.0f;
+	for (int32 i = 0; i < 4; ++i)
 	{
-		int32 Row = i / 4;
-		int32 Col = i % 4;
-
-		FVector2D BtnPos(GridX + Col * (BtnW + Gap), GridY + Row * (BtnH + Gap));
-
-		// Button Background
-		FCanvasTileItem BtnBG(BtnPos, FVector2D(BtnW, BtnH), FLinearColor(0.09f, 0.13f, 0.19f, 0.98f));
+		FVector2D Pos(GridLeft + i * (BtnW + 8.0f), GridTop + 20.0f);
+		FCanvasTileItem BtnBG(Pos, FVector2D(BtnW, BtnH), FLinearColor(0.12f, 0.09f, 0.07f, 0.95f));
 		Canvas->DrawItem(BtnBG);
-
-		// Gold Border
-		FCanvasBoxItem BtnBorder(BtnPos, FVector2D(BtnW, BtnH));
-		BtnBorder.SetColor((Row == 1) ? FLinearColor(0.3f, 0.85f, 1.0f, 0.85f) : FLinearColor(0.92f, 0.72f, 0.22f, 0.85f));
-		BtnBorder.LineThickness = 1.5f;
+		FCanvasBoxItem BtnBorder(Pos, FVector2D(BtnW, BtnH));
+		BtnBorder.SetColor(FLinearColor(0.85f, 0.65f, 0.22f, 0.85f));
 		Canvas->DrawItem(BtnBorder);
+		DrawShadowText(DefaultFont, Formations[i].Key, Pos.X + 8.0f, Pos.Y + 6.0f, 0.80f, FLinearColor(1.0f, 0.85f, 0.2f));
+		DrawShadowText(DefaultFont, Formations[i].Label, Pos.X + 8.0f, Pos.Y + 28.0f, 0.82f, FLinearColor::White);
+	}
 
-		// Two-Line Text with Centered Alignment
-		FLinearColor KeyCol = (Row == 1) ? FLinearColor(0.4f, 0.9f, 1.0f) : FLinearColor(1.0f, 0.85f, 0.2f);
-		DrawShadowText(DefaultFont, Actions[i].Key, BtnPos.X + 10.0f, BtnPos.Y + 12.0f, 1.0f, KeyCol);
-		DrawShadowText(DefaultFont, Actions[i].Action, BtnPos.X + 8.0f, BtnPos.Y + 36.0f, 0.82f, FLinearColor::White);
+	// Imperial Edicts Header
+	const float EdictTop = GridTop + 85.0f;
+	DrawShadowText(DefaultFont, TEXT("IMPERIAL EDICT LAWS"), GridLeft, EdictTop + 2.0f, 0.85f, FLinearColor(0.45f, 0.88f, 1.0f));
+
+	const FCmdBtn Edicts[4] = {
+		{ TEXT("[F1]"), TEXT("TITHE"), TEXT("📜") },
+		{ TEXT("[F2]"), TEXT("CORVEE"), TEXT("🔨") },
+		{ TEXT("[F3]"), TEXT("DOLE"), TEXT("🍞") },
+		{ TEXT("[F4]"), TEXT("GAMES"), TEXT("🏟️") }
+	};
+
+	for (int32 i = 0; i < 4; ++i)
+	{
+		FVector2D Pos(GridLeft + i * (BtnW + 8.0f), EdictTop + 20.0f);
+		FCanvasTileItem BtnBG(Pos, FVector2D(BtnW, BtnH), FLinearColor(0.08f, 0.10f, 0.14f, 0.95f));
+		Canvas->DrawItem(BtnBG);
+		FCanvasBoxItem BtnBorder(Pos, FVector2D(BtnW, BtnH));
+		BtnBorder.SetColor(FLinearColor(0.35f, 0.75f, 1.0f, 0.85f));
+		Canvas->DrawItem(BtnBorder);
+		DrawShadowText(DefaultFont, Edicts[i].Key, Pos.X + 8.0f, Pos.Y + 6.0f, 0.80f, FLinearColor(0.45f, 0.88f, 1.0f));
+		DrawShadowText(DefaultFont, Edicts[i].Label, Pos.X + 8.0f, Pos.Y + 28.0f, 0.82f, FLinearColor::White);
+	}
+
+	// --- SECTION 3 (RIGHT): CIRCULAR BRASS COMPASS MINIMAP ---
+	const float MapDiameter = 180.0f;
+	const float MapX = ScreenW - MapDiameter - 35.0f;
+	const float MapY = ConsoleY + 15.0f;
+
+	// Circular Brass Compass Backing
+	FCanvasTileItem MapBG(FVector2D(MapX, MapY), FVector2D(MapDiameter, MapDiameter), FLinearColor(0.06f, 0.08f, 0.12f, 1.0f));
+	Canvas->DrawItem(MapBG);
+
+	FCanvasBoxItem MapBorder(FVector2D(MapX, MapY), FVector2D(MapDiameter, MapDiameter));
+	MapBorder.SetColor(FLinearColor(0.85f, 0.65f, 0.22f, 1.0f));
+	MapBorder.LineThickness = 2.5f;
+	Canvas->DrawItem(MapBorder);
+
+	// Cardinal Compass Points (N, S, E, W)
+	DrawShadowText(MediumFont, TEXT("N"), MapX + (MapDiameter * 0.5f) - 6.0f, MapY + 4.0f, 0.95f, FLinearColor(1.0f, 0.85f, 0.2f));
+	DrawShadowText(MediumFont, TEXT("S"), MapX + (MapDiameter * 0.5f) - 6.0f, MapY + MapDiameter - 20.0f, 0.95f, FLinearColor(1.0f, 0.85f, 0.2f));
+	DrawShadowText(MediumFont, TEXT("W"), MapX + 4.0f, MapY + (MapDiameter * 0.5f) - 10.0f, 0.95f, FLinearColor(1.0f, 0.85f, 0.2f));
+	DrawShadowText(MediumFont, TEXT("E"), MapX + MapDiameter - 18.0f, MapY + (MapDiameter * 0.5f) - 10.0f, 0.95f, FLinearColor(1.0f, 0.85f, 0.2f));
+
+	// River Canal Curve on Radar
+	Canvas->K2_DrawLine(FVector2D(MapX + 30, MapY + 150), FVector2D(MapX + 100, MapY + 80), 3.0f, FLinearColor(0.15f, 0.45f, 0.85f, 0.8f));
+	Canvas->K2_DrawLine(FVector2D(MapX + 100, MapY + 80), FVector2D(MapX + 160, MapY + 30), 3.0f, FLinearColor(0.15f, 0.45f, 0.85f, 0.8f));
+
+	// Real-Time Tactical Troop Radar Blips
+	TArray<AActor*> AllRadarUnits;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADominionUnitActor::StaticClass(), AllRadarUnits);
+	for (AActor* Act : AllRadarUnits)
+	{
+		if (ADominionUnitActor* Unit = Cast<ADominionUnitActor>(Act))
+		{
+			FVector UnitLoc = Unit->GetActorLocation();
+			float BlipX = MapX + (MapDiameter * 0.5f) + (UnitLoc.X / 110.0f);
+			float BlipY = MapY + (MapDiameter * 0.5f) + (UnitLoc.Y / 110.0f);
+			BlipX = FMath::Clamp(BlipX, MapX + 12.0f, MapX + MapDiameter - 18.0f);
+			BlipY = FMath::Clamp(BlipY, MapY + 12.0f, MapY + MapDiameter - 18.0f);
+
+			FLinearColor BlipCol = (Unit->TeamID == 0) ? FLinearColor(0.2f, 0.7f, 1.0f) : FLinearColor(1.0f, 0.2f, 0.2f);
+			FCanvasTileItem Blip(FVector2D(BlipX, BlipY), FVector2D(6.0f, 6.0f), BlipCol);
+			Canvas->DrawItem(Blip);
+		}
 	}
 }
 
