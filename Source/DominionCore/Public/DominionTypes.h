@@ -141,3 +141,55 @@ struct DOMINIONCORE_API FDominionSavageryMetrics
 	int32 TotalExtinguishedEmpires = 0; // Count of annihilated civilizations
 };
 
+/** The 4 Asymmetric Dark-Fantasy Starting Civilizations */
+UENUM(BlueprintType)
+enum class EDominionFaction : uint8
+{
+	AshenHegemony      UMETA(DisplayName = "The Ashen Theocracy of Ashur-Kish"),
+	IronDynasts        UMETA(DisplayName = "The Iron Slaver League of Karn-Drak"),
+	MiasmaNomads       UMETA(DisplayName = "The Black-Salt Horde of the Dune Wastes"),
+	SunkenSyndicate    UMETA(DisplayName = "The River-Lich Syndicate of Marad-Nun")
+};
+
+USTRUCT(BlueprintType)
+struct DOMINIONCORE_API FDominionCivTrait
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	EDominionFaction FactionID = EDominionFaction::AshenHegemony;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	FString FactionName = TEXT("The Ashen Theocracy of Ashur-Kish");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	FString Motto = TEXT("Through Ash We Cleanse, In Blood We Endure");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	FString SigilIcon = TEXT("🔥");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	FString PrimaryStrength = TEXT("+50% Tithe Income • Fanatical Morale (No Routing Panic)");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	FString CriticalWeakness = TEXT("+25% Discontent during peacetime • Zero Foreign Trade Diplomacy");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	FString UniqueUnit = TEXT("Blood-Sworn Zealot Hoplite (Ignited Bitumen Spears)");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	FString UniqueEdict = TEXT("Edict of the Eternal Pyre (Sacrifice Grain for +30% Combat Attack)");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	float MoraleBreakModifier = 0.0f; // Unbreakable morale
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	float MiningMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	float CavalrySpeedMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Faction")
+	float RiverTradeMultiplier = 1.0f;
+};
+
