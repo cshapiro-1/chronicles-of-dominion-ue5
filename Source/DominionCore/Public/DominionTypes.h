@@ -193,3 +193,36 @@ struct DOMINIONCORE_API FDominionCivTrait
 	float RiverTradeMultiplier = 1.0f;
 };
 
+/** Tactical Formations for mass cohorts */
+UENUM(BlueprintType)
+enum class EDominionFormation : uint8
+{
+	Line     UMETA(DisplayName = "Line"),
+	Square   UMETA(DisplayName = "Square"),
+	Phalanx  UMETA(DisplayName = "Phalanx"),
+	Skirmish UMETA(DisplayName = "Skirmish")
+};
+
+/** Supply status and starvation metrics for military cohorts */
+USTRUCT(BlueprintType)
+struct DOMINIONCORE_API FCohortSupplyStatus
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
+	FName CohortID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
+	bool bIsTethered = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
+	float RationsRemainingSeconds = 180.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
+	float MaxRationsSeconds = 180.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
+	float StarvationDecayRate = 0.015f; // Baseline 1.5% health loss per second
+};
+
+

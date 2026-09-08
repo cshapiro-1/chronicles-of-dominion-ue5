@@ -22,11 +22,12 @@ void UDominionSupplySubsystem::Deinitialize()
 
 void UDominionSupplySubsystem::RegisterCohort(FName CohortID, float InitialRations, float MaxRations)
 {
-    FCohortSupplyState NewState;
+    FCohortSupplyStatus NewState;
     NewState.CohortID = CohortID;
     NewState.bIsTethered = true;
     NewState.RationsRemainingSeconds = InitialRations;
     NewState.MaxRationsSeconds = MaxRations;
+    NewState.StarvationDecayRate = 0.015f; // Standard 1.5% health loss per second
     TrackedCohorts.Add(CohortID, NewState);
 }
 
@@ -37,15 +38,15 @@ void UDominionSupplySubsystem::UnregisterCohort(FName CohortID)
 
 void UDominionSupplySubsystem::SetCohortTethered(FName CohortID, bool bTethered)
 {
-    if (FCohortSupplyState* State = TrackedCohorts.Find(CohortID))
+    if (FCohortSupplyStatus* State = TrackedCohorts.Find(CohortID))
     {
         State->bIsTethered = bTethered;
     }
 }
 
-bool UDominionSupplySubsystem::GetCohortSupplyState(FName CohortID, FCohortSupplyState& OutState) const
+bool UDominionSupplySubsystem::GetCohortSupplyState(FName CohortID, FCohortSupplyStatus& OutState) const
 {
-    if (const FCohortSupplyState* State = TrackedCohorts.Find(CohortID))
+    if (const FCohortSupplyStatus* State = TrackedCohorts.Find(CohortID))
     {
         OutState = *State;
         return true;
@@ -68,7 +69,7 @@ void UDominionSupplySubsystem::Tick(float DeltaTime)
 
     for (auto& Pair : TrackedCohorts)
     {
-        FCohortSupplyState& Cohort = Pair.Value;
+        FCohortSupplyStatus& Cohort = Pair.Value;
 
         if (Cohort.bIsTethered)
         {
@@ -83,10 +84,10 @@ void UDominionSupplySubsystem::Tick(float DeltaTime)
             if (Cohort.RationsRemainingSeconds <= 0.0f)
             {
                 Cohort.RationsRemainingSeconds = 0.0f;
-                // Broadcast coarse starvation attrition tick
+                // Broadcast coarse starvation attrition tick at baseline 1.5% (0.015f)
                 if (OnCohortStarvationTick.IsBound())
                 {
-                    OnCohortStarvationTick.Broadcast(Cohort.CohortID, Cohort.StarvationDamagePercentPerTick);
+                    OnCohortStarvationTick.Broadcast(Cohort.CohortID, Cohort.StarvationDecayRate);
                 }
             }
         }

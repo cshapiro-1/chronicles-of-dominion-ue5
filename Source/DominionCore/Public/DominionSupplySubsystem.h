@@ -1,41 +1,11 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "DominionTypes.h"
 #include "DominionSupplySubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCohortStarvationTick, FName, CohortID, float, DamagePercent);
-
-USTRUCT(BlueprintType)
-struct DOMINIONCORE_API FCohortSupplyState
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
-    FName CohortID;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
-    bool bIsTethered = true;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
-    float RationsRemainingSeconds = 180.0f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
-    float MaxRationsSeconds = 180.0f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dominion|Supply")
-    float StarvationDamagePercentPerTick = 0.05f;
-
-    FCohortSupplyState()
-        : CohortID(NAME_None)
-        , bIsTethered(true)
-        , RationsRemainingSeconds(180.0f)
-        , MaxRationsSeconds(180.0f)
-        , StarvationDamagePercentPerTick(0.05f)
-    {}
-};
 
 /**
  * UDominionSupplySubsystem
@@ -70,7 +40,7 @@ public:
 
     /** Query cohort supply status */
     UFUNCTION(BlueprintPure, Category = "Dominion|Supply")
-    bool GetCohortSupplyState(FName CohortID, FCohortSupplyState& OutState) const;
+    bool GetCohortSupplyState(FName CohortID, FCohortSupplyStatus& OutState) const;
 
     /** Delegate fired whenever an untethered cohort with 0 rations suffers starvation attrition */
     UPROPERTY(BlueprintAssignable, Category = "Dominion|Supply")
@@ -78,7 +48,7 @@ public:
 
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dominion|Supply")
-    TMap<FName, FCohortSupplyState> TrackedCohorts;
+    TMap<FName, FCohortSupplyStatus> TrackedCohorts;
 
 private:
     float CoarseTickAccumulator = 0.0f;

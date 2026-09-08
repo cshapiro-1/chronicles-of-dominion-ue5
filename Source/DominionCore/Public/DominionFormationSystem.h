@@ -1,20 +1,9 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "DominionTypes.h"
 #include "DominionFormationSystem.generated.h"
-
-/** Tactical Formations for mass cohorts */
-UENUM(BlueprintType)
-enum class EDominionFormation : uint8
-{
-    Line     UMETA(DisplayName = "Line"),
-    Square   UMETA(DisplayName = "Square"),
-    Phalanx  UMETA(DisplayName = "Phalanx"),
-    Skirmish UMETA(DisplayName = "Skirmish")
-};
 
 /** Backward-compatibility formation type */
 UENUM(BlueprintType)
