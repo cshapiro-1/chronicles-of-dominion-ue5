@@ -18,15 +18,15 @@ ADominionRTSPawn::ADominionRTSPawn()
     SpringArmComponent->bInheritPitch = false;
     SpringArmComponent->bInheritRoll = false;
     SpringArmComponent->bInheritYaw = true;
-    SpringArmComponent->TargetArmLength = 3600.0f;
-    SpringArmComponent->SetRelativeRotation(FRotator(-52.0f, 0.0f, 0.0f));
+    SpringArmComponent->TargetArmLength = 1650.0f;
+    SpringArmComponent->SetRelativeRotation(FRotator(-38.0f, 45.0f, 0.0f));
 
     CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("RTSCamera"));
     CameraComponent->SetupAttachment(SpringArmComponent, USpringArmComponent::SocketName);
     CameraComponent->bUsePawnControlRotation = false;
 
-    TargetArmLength = 3600.0f;
-    TargetYaw = 0.0f;
+    TargetArmLength = 1650.0f;
+    TargetYaw = 45.0f;
 }
 
 void ADominionRTSPawn::BeginPlay()
@@ -63,12 +63,9 @@ void ADominionRTSPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
     if (PlayerInputComponent)
     {
-        // WASD & Arrow Key Bindings
-        PlayerInputComponent->BindKey(EKeys::W, IE_Pressed, this, &ADominionRTSPawn::InputZoomIn); // Fallback hook
+        // Mouse Wheel Zoom
         PlayerInputComponent->BindKey(EKeys::MouseScrollUp, IE_Pressed, this, &ADominionRTSPawn::InputZoomIn);
         PlayerInputComponent->BindKey(EKeys::MouseScrollDown, IE_Pressed, this, &ADominionRTSPawn::InputZoomOut);
-        PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &ADominionRTSPawn::InputRotateLeft);
-        PlayerInputComponent->BindKey(EKeys::E, IE_Pressed, this, &ADominionRTSPawn::InputRotateRight);
     }
 }
 
@@ -114,7 +111,7 @@ void ADominionRTSPawn::MoveCamera(FVector2D Axis)
     FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
     FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
 
-    float CurrentZoomMultiplier = FMath::Lerp(0.3f, 2.5f, GetCurrentZoomPercent());
+    float CurrentZoomMultiplier = FMath::Lerp(0.9f, 3.8f, GetCurrentZoomPercent());
     float Dt = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.016f;
     TargetLocation += (Forward * Axis.Y + Right * Axis.X) * PanSpeed * CurrentZoomMultiplier * Dt;
 }

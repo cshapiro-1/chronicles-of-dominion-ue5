@@ -1,4 +1,4 @@
-﻿#include "DominionModularBuildingComponent.h"
+#include "DominionModularBuildingComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "NiagaraComponent.h"
 #include "GameFramework/Actor.h"
@@ -32,23 +32,29 @@ void UDominionModularBuildingComponent::ApplyVisualTheme(UDominionBuildingVisual
     // Hot-swap static meshes asynchronously or synchronously
     if (MainStructureMeshComponent && NewVisualAsset->MainStructureMesh.IsValid())
     {
+        MainStructureMeshComponent->SetMobility(EComponentMobility::Movable);
         MainStructureMeshComponent->SetStaticMesh(NewVisualAsset->MainStructureMesh.Get());
     }
 
     if (RoofMeshComponent && NewVisualAsset->RoofMesh.IsValid())
     {
+        RoofMeshComponent->SetMobility(EComponentMobility::Movable);
         RoofMeshComponent->SetStaticMesh(NewVisualAsset->RoofMesh.Get());
     }
 
     if (FoundationMeshComponent && NewVisualAsset->BaseFoundationMesh.IsValid())
     {
+        FoundationMeshComponent->SetMobility(EComponentMobility::Movable);
         FoundationMeshComponent->SetStaticMesh(NewVisualAsset->BaseFoundationMesh.Get());
     }
 
-    // Apply culture material skin
+    // Apply culture material skin with slot bounds verification
     if (MainStructureMeshComponent && NewVisualAsset->PrimaryMaterialSkin.IsValid())
     {
-        MainStructureMeshComponent->SetMaterial(0, NewVisualAsset->PrimaryMaterialSkin.Get());
+        if (MainStructureMeshComponent->GetNumMaterials() > 0)
+        {
+            MainStructureMeshComponent->SetMaterial(0, NewVisualAsset->PrimaryMaterialSkin.Get());
+        }
     }
 }
 
@@ -56,13 +62,14 @@ void UDominionModularBuildingComponent::SwapRoofMesh(UStaticMesh* NewRoofMesh)
 {
     if (RoofMeshComponent && NewRoofMesh)
     {
+        RoofMeshComponent->SetMobility(EComponentMobility::Movable);
         RoofMeshComponent->SetStaticMesh(NewRoofMesh);
     }
 }
 
 void UDominionModularBuildingComponent::ApplyDamageBurnOverlay(float DamagePercent)
 {
-    if (!MainStructureMeshComponent) return;
+    if (!MainStructureMeshComponent || MainStructureMeshComponent->GetNumMaterials() == 0) return;
 
     // Apply procedural charred burn mask dynamically via Material Instance Dynamic
     UMaterialInstanceDynamic* DynMat = MainStructureMeshComponent->CreateAndSetMaterialInstanceDynamic(0);

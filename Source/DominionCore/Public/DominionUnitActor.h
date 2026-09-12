@@ -15,10 +15,12 @@ UENUM(BlueprintType)
 enum class EDominionUnitType : uint8
 {
 	BronzeSpearman UMETA(DisplayName = "Bronze Spearman"),
+	Slinger        UMETA(DisplayName = "Mesopotamian Slinger"),
 	HeavyChariot   UMETA(DisplayName = "Heavy War Chariot"),
 	OxCartSupply   UMETA(DisplayName = "Ox-Cart Baggage Train"),
 	CatapultSiege  UMETA(DisplayName = "Siege Catapult"),
-	WorkerPeasant  UMETA(DisplayName = "Canal Worker")
+	WorkerPeasant  UMETA(DisplayName = "Canal Worker"),
+	DummyTarget    UMETA(DisplayName = "Training Dummy")
 };
 
 UENUM(BlueprintType)
@@ -48,6 +50,14 @@ public:
 	/** Select/Deselect visual feedback */
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")
 	void SetSelected(bool bNewSelected);
+
+	/** Hover visual feedback under cursor */
+	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")
+	void SetHovered(bool bNewHovered);
+
+	/** Configure unit archetype and stats */
+	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")
+	void ConfigureUnitType(EDominionUnitType NewType, int32 NewTeamID);
 
 	/** Issue movement command to terrain target */
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Unit")
@@ -101,7 +111,19 @@ public:
 	float BaseMoveSpeed = 380.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
+	float AttackRange = 220.0f; // 220 for melee Spearman, 900 for ranged Slinger
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
+	float AttackInterval = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
+	float AutoAttackRadius = 800.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
 	bool bIsSelected = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
+	bool bIsHovered = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unit Stats")
 	bool bInShieldWall = true;
@@ -146,33 +168,6 @@ public:
 	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> HelmetMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> PlumeMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> ShieldMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> ShieldBossMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> WeaponMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> SpearheadMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> MountLeftMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> MountRightMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> CrewMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> SelectionRingMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -189,4 +184,7 @@ private:
 	TObjectPtr<ADominionUnitActor> CurrentTargetUnit;
 
 	float AttackCooldownTimer = 0.0f;
+	float RoutTimer = 0.0f;
+	float DamageFeedbackTimer = 0.0f;
+	float LastDamageTaken = 0.0f;
 };

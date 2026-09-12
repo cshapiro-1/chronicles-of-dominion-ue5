@@ -9,6 +9,7 @@
 #include "Animation/Skeleton.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/Engine.h"
+#include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 
 ADominionUnitActor::ADominionUnitActor()
@@ -21,12 +22,16 @@ ADominionUnitActor::ADominionUnitActor()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> ConeFinder(TEXT("/Engine/BasicShapes/Cone.Cone"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SpearmanFinder(TEXT("/Game/Characters/Units/SM_Sumerian_Spearman.SM_Sumerian_Spearman"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SlingerFinder(TEXT("/Game/Characters/Units/SM_Sumerian_Slinger.SM_Sumerian_Slinger"));
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MannyFinder(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"));
 
 	UStaticMesh* CylinderMesh = CylinderFinder.Succeeded() ? CylinderFinder.Object : nullptr;
 	UStaticMesh* SphereMesh = SphereFinder.Succeeded() ? SphereFinder.Object : nullptr;
 	UStaticMesh* CubeMesh = CubeFinder.Succeeded() ? CubeFinder.Object : nullptr;
 	UStaticMesh* ConeMesh = ConeFinder.Succeeded() ? ConeFinder.Object : nullptr;
+	UStaticMesh* SpearmanMesh = SpearmanFinder.Succeeded() ? SpearmanFinder.Object : nullptr;
+	UStaticMesh* SlingerMesh = SlingerFinder.Succeeded() ? SlingerFinder.Object : nullptr;
 	USkeletalMesh* MannyMesh = MannyFinder.Succeeded() ? MannyFinder.Object : nullptr;
 
 	// 1. Root Capsule Collider (Eliminates FindTeleportSpot intersection warnings)
@@ -71,128 +76,105 @@ ADominionUnitActor::ADominionUnitActor()
 		UnitMesh->SetVisibility(true);
 	}
 
-	// 1. Bronze Helmet
-	HelmetMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HelmetMesh"));
-	HelmetMesh->SetupAttachment(RootComponent);
-	HelmetMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 62.0f));
-	HelmetMesh->SetRelativeScale3D(FVector(0.48f, 0.48f, 0.42f));
-	HelmetMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (SphereMesh)
-	{
-		HelmetMesh->SetStaticMesh(SphereMesh);
-	}
-
-	// 2. Horsehair Helmet Crest / Plume
-	PlumeMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlumeMesh"));
-	PlumeMesh->SetupAttachment(HelmetMesh);
-	PlumeMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 22.0f));
-	PlumeMesh->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	PlumeMesh->SetRelativeScale3D(FVector(0.18f, 0.45f, 0.35f));
-	PlumeMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (ConeMesh)
-	{
-		PlumeMesh->SetStaticMesh(ConeMesh);
-	}
-
-	// 3. Greek/Mesopotamian Aspis Shield on Left Arm
-	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
-	ShieldMesh->SetupAttachment(RootComponent);
-	ShieldMesh->SetRelativeLocation(FVector(0.0f, -32.0f, 0.0f));
-	ShieldMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 90.0f));
-	ShieldMesh->SetRelativeScale3D(FVector(0.58f, 0.58f, 0.06f));
-	ShieldMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (CylinderMesh)
-	{
-		ShieldMesh->SetStaticMesh(CylinderMesh);
-	}
-
-	// 4. Golden Center Boss / Emblem on Shield
-	ShieldBossMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldBossMesh"));
-	ShieldBossMesh->SetupAttachment(ShieldMesh);
-	ShieldBossMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 8.0f));
-	ShieldBossMesh->SetRelativeScale3D(FVector(0.28f, 0.28f, 0.18f));
-	ShieldBossMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (SphereMesh)
-	{
-		ShieldBossMesh->SetStaticMesh(SphereMesh);
-	}
-
-	// 5. Long Cedar Spear Shaft
-	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
-	WeaponMesh->SetupAttachment(RootComponent);
-	WeaponMesh->SetRelativeLocation(FVector(20.0f, 28.0f, 25.0f));
-	WeaponMesh->SetRelativeRotation(FRotator(20.0f, 0.0f, 0.0f));
-	WeaponMesh->SetRelativeScale3D(FVector(0.04f, 0.04f, 3.2f));
-	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (CylinderMesh)
-	{
-		WeaponMesh->SetStaticMesh(CylinderMesh);
-	}
-
-	// 6. Shining Bronze Spearhead Tip
-	SpearheadMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpearheadMesh"));
-	SpearheadMesh->SetupAttachment(WeaponMesh);
-	SpearheadMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 52.0f));
-	SpearheadMesh->SetRelativeScale3D(FVector(2.8f, 2.8f, 0.35f));
-	SpearheadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (ConeMesh)
-	{
-		SpearheadMesh->SetStaticMesh(ConeMesh);
-	}
-
-	// 7. Mounts / Spoke Wheels (for Chariots and Carts)
-	MountLeftMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MountLeftMesh"));
-	MountLeftMesh->SetupAttachment(RootComponent);
-	MountLeftMesh->SetRelativeLocation(FVector(0.0f, -48.0f, -25.0f));
-	MountLeftMesh->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	MountLeftMesh->SetRelativeScale3D(FVector(0.55f, 0.55f, 0.1f));
-	MountLeftMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	MountLeftMesh->SetVisibility(false);
-	if (CylinderMesh)
-	{
-		MountLeftMesh->SetStaticMesh(CylinderMesh);
-	}
-
-	MountRightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MountRightMesh"));
-	MountRightMesh->SetupAttachment(RootComponent);
-	MountRightMesh->SetRelativeLocation(FVector(0.0f, 48.0f, -25.0f));
-	MountRightMesh->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	MountRightMesh->SetRelativeScale3D(FVector(0.55f, 0.55f, 0.1f));
-	MountRightMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	MountRightMesh->SetVisibility(false);
-	if (CylinderMesh)
-	{
-		MountRightMesh->SetStaticMesh(CylinderMesh);
-	}
-
-	// 8. Crew Figure / Cargo Load
-	CrewMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CrewMesh"));
-	CrewMesh->SetupAttachment(RootComponent);
-	CrewMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 40.0f));
-	CrewMesh->SetRelativeScale3D(FVector(0.45f, 0.45f, 0.8f));
-	CrewMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CrewMesh->SetVisibility(false);
-	if (CylinderMesh)
-	{
-		CrewMesh->SetStaticMesh(CylinderMesh);
-	}
-
-	// 9. Selection Ring on Ground
+	// 4. Selection Ring on Ground
 	SelectionRingMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SelectionRingMesh"));
 	SelectionRingMesh->SetupAttachment(RootComponent);
-	SelectionRingMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -55.0f));
-	SelectionRingMesh->SetRelativeScale3D(FVector(1.4f, 1.4f, 0.04f));
+	SelectionRingMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f));
+	SelectionRingMesh->SetRelativeScale3D(FVector(1.6f, 1.6f, 0.03f));
 	SelectionRingMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SelectionRingMesh->SetMobility(EComponentMobility::Movable);
 	SelectionRingMesh->SetVisibility(false);
 	if (CylinderMesh)
 	{
 		SelectionRingMesh->SetStaticMesh(CylinderMesh);
 	}
 
-	// 10. Overhead Billboard Display (Hidden by default for clean RTS visual fidelity)
+	// 5. Overhead Billboard Display
 	OverheadStatusText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("OverheadStatusText"));
 	OverheadStatusText->SetupAttachment(RootComponent);
 	OverheadStatusText->SetVisibility(false);
+}
+
+void ADominionUnitActor::ConfigureUnitType(EDominionUnitType NewType, int32 NewTeamID)
+{
+	UnitType = NewType;
+	TeamID = NewTeamID;
+
+	const FLinearColor TeamColor = (TeamID == 0) ? FLinearColor(0.12f, 0.45f, 0.95f) : FLinearColor(0.88f, 0.15f, 0.15f);
+
+	static UStaticMesh* LoadedSpearman = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, TEXT("/Game/Characters/Units/SM_Sumerian_Spearman.SM_Sumerian_Spearman")));
+	static UStaticMesh* LoadedSlinger = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, TEXT("/Game/Characters/Units/SM_Sumerian_Slinger.SM_Sumerian_Slinger")));
+
+	if (UnitType == EDominionUnitType::BronzeSpearman)
+	{
+		UnitName = (TeamID == 0) ? TEXT("Bronze Spearman") : TEXT("Enemy Spearman");
+		MaxHealth = 100.0f;
+		Health = 100.0f;
+		AttackPower = 25.0f;
+		Armor = 6.0f;
+		MoveSpeed = 360.0f;
+		BaseMoveSpeed = 360.0f;
+		AttackRange = 220.0f;
+		AttackInterval = 1.0f;
+		bInShieldWall = true;
+
+		if (LoadedSpearman && UnitMesh)
+		{
+			UnitMesh->SetStaticMesh(LoadedSpearman);
+			UnitMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+			UnitMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+			UnitMesh->SetVisibility(true);
+		}
+	}
+	else if (UnitType == EDominionUnitType::Slinger)
+	{
+		UnitName = (TeamID == 0) ? TEXT("Mesopotamian Slinger") : TEXT("Enemy Slinger");
+		MaxHealth = 70.0f;
+		Health = 70.0f;
+		AttackPower = 18.0f;
+		Armor = 2.0f;
+		MoveSpeed = 400.0f;
+		BaseMoveSpeed = 400.0f;
+		AttackRange = 900.0f;
+		AttackInterval = 1.2f;
+		bInShieldWall = false;
+
+		if (LoadedSlinger && UnitMesh)
+		{
+			UnitMesh->SetStaticMesh(LoadedSlinger);
+			UnitMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+			UnitMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+			UnitMesh->SetVisibility(true);
+		}
+	}
+	else if (UnitType == EDominionUnitType::DummyTarget)
+	{
+		UnitName = TEXT("Training Target Dummy");
+		MaxHealth = 300.0f;
+		Health = 300.0f;
+		AttackPower = 0.0f;
+		Armor = 0.0f;
+		MoveSpeed = 0.0f;
+		BaseMoveSpeed = 0.0f;
+		AttackRange = 0.0f;
+		AttackInterval = 10.0f;
+		bInShieldWall = false;
+	}
+
+	if (UnitMesh && UnitMesh->GetStaticMesh() && UnitMesh->GetNumMaterials() > 0)
+	{
+		UMaterialInstanceDynamic* DynMat = UnitMesh->CreateAndSetMaterialInstanceDynamic(0);
+		if (DynMat)
+		{
+			DynMat->SetVectorParameterValue(TEXT("BaseColor"), TeamColor);
+			DynMat->SetVectorParameterValue(TEXT("Color"), TeamColor);
+		}
+	}
+
+	if (OverheadStatusText)
+	{
+		OverheadStatusText->SetVisibility(false);
+	}
 }
 
 void ADominionUnitActor::BeginPlay()
@@ -201,88 +183,13 @@ void ADominionUnitActor::BeginPlay()
 
 	TargetDestination = GetActorLocation();
 
-	// High-Fidelity Historical PBR Materials
-	const FLinearColor TeamColor = (TeamID == 0) ? FLinearColor(0.12f, 0.45f, 0.95f) : FLinearColor(0.88f, 0.15f, 0.15f);
-	const FLinearColor PolishedBronze(0.92f, 0.65f, 0.28f);
-	const FLinearColor DarkCedarWood(0.38f, 0.22f, 0.12f);
-	const FLinearColor SolarGold(1.0f, 0.82f, 0.18f);
-	const FLinearColor HorsehairBlack(0.08f, 0.08f, 0.08f);
-	const FLinearColor LinenWhite(0.92f, 0.88f, 0.82f);
-	const FLinearColor PlumeColor = (TeamID == 0) ? SolarGold : FLinearColor(0.95f, 0.15f, 0.15f);
-
-	if (UnitType == EDominionUnitType::HeavyChariot)
+	if (UnitType == EDominionUnitType::BronzeSpearman || UnitType == EDominionUnitType::Slinger || UnitType == EDominionUnitType::DummyTarget)
 	{
-		UnitMesh->SetRelativeScale3D(FVector(1.8f, 1.2f, 0.6f));
-		MountLeftMesh->SetVisibility(true);
-		MountRightMesh->SetVisibility(true);
-		CrewMesh->SetVisibility(true);
-		PlumeMesh->SetVisibility(true);
-		ShieldMesh->SetRelativeLocation(FVector(20.0f, -44.0f, 10.0f));
-		WeaponMesh->SetRelativeRotation(FRotator(10.0f, 0.0f, 0.0f));
-		WeaponMesh->SetRelativeScale3D(FVector(0.06f, 0.06f, 3.4f));
+		ConfigureUnitType(UnitType, TeamID);
 	}
-	else if (UnitType == EDominionUnitType::OxCartSupply)
+	else
 	{
-		UnitMesh->SetRelativeScale3D(FVector(2.0f, 1.3f, 0.7f));
-		MountLeftMesh->SetVisibility(true);
-		MountRightMesh->SetVisibility(true);
-		CrewMesh->SetVisibility(true); // Grain sacks
-		CrewMesh->SetRelativeScale3D(FVector(1.2f, 0.9f, 0.5f));
-		ShieldMesh->SetVisibility(false);
-		HelmetMesh->SetVisibility(false);
-		PlumeMesh->SetVisibility(false);
-		WeaponMesh->SetVisibility(false);
-	}
-
-	// Procedural PBR Textures
-	static UTexture2D* BronzeAlbedo = UDominionTextureFactory::CreateHammeredBronzeAlbedo(512, 512);
-	static UTexture2D* BronzeNormal = UDominionTextureFactory::CreateHammeredBronzeNormal(512, 512);
-	static UTexture2D* CedarAlbedo = UDominionTextureFactory::CreateCedarWoodAlbedo(512, 512);
-
-	// Dynamic PBR Setup with Metallic & Roughness & Texture Maps
-	auto ApplyDynPBR = [this](UStaticMeshComponent* Comp, const FLinearColor& Color, float Metallic = 0.0f, float Roughness = 0.6f, const FLinearColor& EmissiveColor = FLinearColor::Black)
-	{
-		if (Comp && Comp->GetStaticMesh() && Comp->GetNumMaterials() > 0)
-		{
-			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(this, Color, Metallic, Roughness, EmissiveColor);
-			if (DynMat)
-			{
-				Comp->SetMaterial(0, DynMat);
-			}
-		}
-	};
-
-	ApplyDynPBR(UnitMesh, TeamColor, 0.1f, 0.5f);
-	ApplyDynPBR(HelmetMesh, PolishedBronze, 0.95f, 0.22f);
-	ApplyDynPBR(PlumeMesh, PlumeColor, 0.0f, 0.85f);
-	ApplyDynPBR(ShieldMesh, TeamColor, 0.3f, 0.4f);
-	ApplyDynPBR(ShieldBossMesh, SolarGold, 0.98f, 0.18f);
-	ApplyDynPBR(WeaponMesh, DarkCedarWood, 0.0f, 0.75f);
-	ApplyDynPBR(SpearheadMesh, PolishedBronze, 0.95f, 0.20f);
-	ApplyDynPBR(MountLeftMesh, DarkCedarWood, 0.0f, 0.80f);
-	ApplyDynPBR(MountRightMesh, DarkCedarWood, 0.0f, 0.80f);
-	ApplyDynPBR(CrewMesh, (UnitType == EDominionUnitType::OxCartSupply) ? LinenWhite : TeamColor, 0.0f, 0.8f);
-	ApplyDynPBR(SelectionRingMesh, SolarGold, 0.8f, 0.2f, FLinearColor(2.0f, 1.6f, 0.2f));
-
-	// Apply Dynamic Material Tint to 3D Skeletal Mesh Warrior (with bounds and asset validation)
-	if (SkeletalMesh && SkeletalMesh->GetSkeletalMeshAsset() && SkeletalMesh->IsVisible())
-	{
-		const int32 NumMaterials = SkeletalMesh->GetNumMaterials();
-		for (int32 m = 0; m < NumMaterials; ++m)
-		{
-			if (SkeletalMesh->GetMaterial(m) != nullptr)
-			{
-				UMaterialInstanceDynamic* DynMat = SkeletalMesh->CreateAndSetMaterialInstanceDynamic(m);
-				if (DynMat)
-				{
-					DynMat->SetVectorParameterValue(TEXT("BaseColor"), TeamColor);
-					DynMat->SetVectorParameterValue(TEXT("Color"), TeamColor);
-					DynMat->SetVectorParameterValue(TEXT("BodyColor"), TeamColor);
-					DynMat->SetScalarParameterValue(TEXT("Metallic"), 0.35f);
-					DynMat->SetScalarParameterValue(TEXT("Roughness"), 0.45f);
-				}
-			}
-		}
+		ConfigureUnitType(EDominionUnitType::BronzeSpearman, TeamID);
 	}
 }
 
@@ -310,94 +217,104 @@ void ADominionUnitActor::ConsumeFieldRations(float DeltaTime)
 void ADominionUnitActor::SetStarvingState(bool bNewStarving)
 {
 	bIsStarving = bNewStarving;
-	if (bIsStarving)
-	{
-		if (OverheadStatusText)
-		{
-			OverheadStatusText->SetText(FText::FromString(TEXT("[!] STARVING (0s RATIONS) - ATTRITION")));
-			OverheadStatusText->SetTextRenderColor(FColor(255, 100, 30));
-		}
-	}
-	else
-	{
-		if (OverheadStatusText && CombatState != EDominionCombatState::InCombat)
-		{
-			FString StatusStr = FString::Printf(TEXT("%s | HP: %d/%d"), *UnitName, FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
-			OverheadStatusText->SetText(FText::FromString(StatusStr));
-			OverheadStatusText->SetTextRenderColor((TeamID == 0) ? FColor(255, 215, 0) : FColor(255, 60, 60));
-		}
-	}
 }
 
 void ADominionUnitActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (Health <= 0.0f)
+	{
+		Destroy();
+		return;
+	}
+
 	const float WorldTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
 
-	// Haversack Field Rations & Starvation Attrition
-	if (TeamID == 0 && UnitType != EDominionUnitType::OxCartSupply)
+	// 1. Combat Loop & Targeting
+	if (CurrentTargetUnit && IsValid(CurrentTargetUnit) && CurrentTargetUnit->Health > 0.0f)
 	{
-		if (bIsStarving)
+		const float DistToTarget = FVector::Dist2D(GetActorLocation(), CurrentTargetUnit->GetActorLocation());
+		if (DistToTarget <= AttackRange)
 		{
-			// 1. Health attrition: lose 1.5% max health per second once haversack is completely dry
-			Health = FMath::Max(1.0f, Health - (MaxHealth * 0.015f * DeltaTime));
-
-			// 2. Morale decay: lose 5 morale per second
-			Morale = FMath::Clamp(Morale - (5.0f * DeltaTime), 0.0f, 100.0f);
-
-			// 3. Mutiny / Routing Panic if starved below 20 morale
-			if (Morale <= 20.0f && CombatState != EDominionCombatState::RoutingPanic)
+			bHasDestination = false;
+			FVector DirToTarget = (CurrentTargetUnit->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+			if (!DirToTarget.IsNearlyZero())
 			{
-				CombatState = EDominionCombatState::RoutingPanic;
-				MoveSpeed = BaseMoveSpeed * 1.35f; // Scatter in panic
+				SetActorRotation(FMath::RInterpTo(GetActorRotation(), DirToTarget.Rotation(), DeltaTime, 12.0f));
 			}
 
-			if (OverheadStatusText)
+			AttackCooldownTimer -= DeltaTime;
+
+			if (AttackCooldownTimer <= 0.0f)
 			{
-				FString StarveStr = FString::Printf(TEXT("[!] STARVING (0s RATIONS | %d%% MORALE) | HP: %d"), FMath::RoundToInt(Morale), FMath::RoundToInt(Health));
-				OverheadStatusText->SetText(FText::FromString(StarveStr));
-				OverheadStatusText->SetTextRenderColor(FColor(255, 60, 20));
+				// Deliver Damage
+				CurrentTargetUnit->TakeCombatDamage(AttackPower, 2.0f, this, DirToTarget);
+
+				// Slinger Visual Tracer
+				if (UnitType == EDominionUnitType::Slinger)
+				{
+					if (UWorld* World = GetWorld())
+					{
+						DrawDebugLine(World, GetActorLocation() + FVector(0.0f, 0.0f, 60.0f), CurrentTargetUnit->GetActorLocation() + FVector(0.0f, 0.0f, 60.0f), FColor::Yellow, false, 0.20f, 0, 3.5f);
+					}
+				}
+
+				AttackCooldownTimer = AttackInterval;
+				CombatState = EDominionCombatState::InCombat;
 			}
 		}
 		else
 		{
-			// Unit is operating safely on Haversack Rations or Resupplying from Baggage Train
-			if (bIsResupplying)
-			{
-				if (OverheadStatusText && CombatState != EDominionCombatState::InCombat)
-				{
-					FString SupplyStr = FString::Printf(TEXT("[SUPPLIED (CART)] Rations: %.0fs | HP: %d"), FieldRations, FMath::RoundToInt(Health));
-					OverheadStatusText->SetText(FText::FromString(SupplyStr));
-					OverheadStatusText->SetTextRenderColor(FColor(80, 255, 120));
-				}
-			}
-			else if (FieldRations < MaxFieldRations)
-			{
-				if (OverheadStatusText && CombatState != EDominionCombatState::InCombat)
-				{
-					FString BufferStr = FString::Printf(TEXT("[HAVERSACK: %.0fs BUFFER] HP: %d"), FieldRations, FMath::RoundToInt(Health));
-					OverheadStatusText->SetText(FText::FromString(BufferStr));
-					OverheadStatusText->SetTextRenderColor(FColor(255, 200, 50));
-				}
-			}
+			// March into attack range
+			MoveToLocation(CurrentTargetUnit->GetActorLocation());
+		}
+	}
+	else
+	{
+		if (CurrentTargetUnit != nullptr)
+		{
+			CurrentTargetUnit = nullptr;
+			CombatState = EDominionCombatState::Idle;
+		}
 
-			// Hope & Estates Morale Modulation (Player Army)
-			if (UDominionPoliticalEstatesSystem* Estates = GetWorld() ? GetWorld()->GetSubsystem<UDominionPoliticalEstatesSystem>() : nullptr)
+		// Auto-Attack Search (only when idle, not moving, and no target)
+		if (CombatState == EDominionCombatState::Idle && !bHasDestination && CurrentTargetUnit == nullptr && AttackPower > 0.0f)
+		{
+			UWorld* World = GetWorld();
+			if (World)
 			{
-				if (Estates->GetHope() > 70.0f)
+				TArray<AActor*> AllUnits;
+				UGameplayStatics::GetAllActorsOfClass(World, ADominionUnitActor::StaticClass(), AllUnits);
+
+				float NearestDist = AutoAttackRadius;
+				ADominionUnitActor* BestTarget = nullptr;
+
+				for (AActor* Act : AllUnits)
 				{
-					Morale = FMath::Min(100.0f, Morale + (1.2f * DeltaTime)); // High Hope Morale Boost
+					if (ADominionUnitActor* Candidate = Cast<ADominionUnitActor>(Act))
+					{
+						if (Candidate != this && Candidate->TeamID != this->TeamID && Candidate->Health > 0.0f)
+						{
+							float D = FVector::Dist2D(GetActorLocation(), Candidate->GetActorLocation());
+							if (D < NearestDist)
+							{
+								NearestDist = D;
+								BestTarget = Candidate;
+							}
+						}
+					}
 				}
-				else if (Estates->GetHope() < 20.0f)
+
+				if (BestTarget)
 				{
-					Morale = FMath::Max(15.0f, Morale - (2.0f * DeltaTime)); // Imperial Despair decay
+					AttackTarget(BestTarget);
 				}
 			}
 		}
 	}
 
-	// Movement Execution with Dynamic Formation Cohesion
+	// 2. Direct Movement Execution
 	if (bHasDestination)
 	{
 		FVector CurrentLoc = GetActorLocation();
@@ -408,49 +325,13 @@ void ADominionUnitActor::Tick(float DeltaTime)
 		if (Dist > 25.0f)
 		{
 			Direction.Normalize();
-
-			// Dynamic Formation Cohesion Speed Steering
-			float DynamicSpeed = BaseMoveSpeed;
-			if (Dist > 200.0f)
-			{
-				DynamicSpeed = BaseMoveSpeed * 1.25f; // Catch up to formation
-			}
-			else if (Dist < 60.0f)
-			{
-				DynamicSpeed = BaseMoveSpeed * 0.85f; // Settle into slot
-			}
-			MoveSpeed = DynamicSpeed;
-
 			FVector NewLoc = CurrentLoc + Direction * MoveSpeed * DeltaTime;
-			SetActorLocation(NewLoc, true);
+			NewLoc.Z = CurrentLoc.Z; // Maintain elevation above terrain
+			SetActorLocation(NewLoc, false);
 
-			// Rotate smoothly to face movement direction or desired formation heading
-			FRotator TargetRot = (Dist < 80.0f && !DesiredHeading.IsZero()) ? DesiredHeading : Direction.Rotation();
+			FRotator TargetRot = (!DesiredHeading.IsZero() && Dist < 80.0f) ? DesiredHeading : Direction.Rotation();
 			SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRot, DeltaTime, 12.0f));
 			CombatState = EDominionCombatState::Marching;
-
-			// Procedural Marching Cadence (Stride Bobbing & Weapon Swing)
-			const float Stride = FMath::Sin(WorldTime * 9.0f);
-			if (HelmetMesh)
-			{
-				HelmetMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 62.0f + Stride * 3.0f));
-			}
-			if (WeaponMesh && UnitType == EDominionUnitType::BronzeSpearman)
-			{
-				WeaponMesh->SetRelativeRotation(FRotator(20.0f + Stride * 12.0f, 0.0f, 0.0f));
-			}
-			if (ShieldMesh)
-			{
-				ShieldMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 90.0f - Stride * 6.0f));
-			}
-
-			// Chariot / Cart Wheel Rolling Physics
-			if (MountLeftMesh && MountLeftMesh->IsVisible())
-			{
-				const float WheelAngle = MoveSpeed * DeltaTime * 3.0f;
-				MountLeftMesh->AddLocalRotation(FRotator(WheelAngle, 0.0f, 0.0f));
-				MountRightMesh->AddLocalRotation(FRotator(WheelAngle, 0.0f, 0.0f));
-			}
 		}
 		else
 		{
@@ -465,56 +346,49 @@ void ADominionUnitActor::Tick(float DeltaTime)
 			}
 		}
 	}
-	else
+
+	// 3. Real-time Overhead Status Update & Morale Panic
+	if (CombatState == EDominionCombatState::RoutingPanic)
 	{
-		// Idle Organic Breathing Motion
-		if (CombatState == EDominionCombatState::Idle)
+		RoutTimer -= DeltaTime;
+		if (RoutTimer <= 0.0f)
 		{
-			const float Respiration = FMath::Sin(WorldTime * 2.8f) * 1.5f;
-			if (HelmetMesh)
-			{
-				HelmetMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 62.0f + Respiration));
-			}
+			CombatState = EDominionCombatState::Idle;
+			Morale = 45.0f;
+			MoveSpeed = BaseMoveSpeed;
 		}
 	}
 
-	// Combat Tick & Spear Thrust Attack Animation
-	if (CurrentTargetUnit && IsValid(CurrentTargetUnit))
+	if (DamageFeedbackTimer > 0.0f)
 	{
-		float DistToTarget = FVector::Dist(GetActorLocation(), CurrentTargetUnit->GetActorLocation());
-		if (DistToTarget <= 260.0f)
+		DamageFeedbackTimer -= DeltaTime;
+	}
+
+	if (OverheadStatusText)
+	{
+		if (CombatState == EDominionCombatState::RoutingPanic)
 		{
-			AttackCooldownTimer -= DeltaTime;
-
-			// Spear Thrusting Animation
-			if (WeaponMesh && UnitType == EDominionUnitType::BronzeSpearman)
-			{
-				// Thrust forward during first 0.3s of cooldown
-				float ThrustOffset = 0.0f;
-				if (AttackCooldownTimer > 0.8f)
-				{
-					ThrustOffset = (1.2f - AttackCooldownTimer) / 0.4f * 45.0f;
-				}
-				else if (AttackCooldownTimer > 0.5f)
-				{
-					ThrustOffset = (AttackCooldownTimer - 0.5f) / 0.3f * 45.0f;
-				}
-				WeaponMesh->SetRelativeLocation(FVector(20.0f + ThrustOffset, 28.0f, 25.0f));
-				WeaponMesh->SetRelativeRotation(FRotator(4.0f, 0.0f, 0.0f)); // Level thrust
-			}
-
-			if (AttackCooldownTimer <= 0.0f)
-			{
-				FVector AttackDir = (CurrentTargetUnit->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-				CurrentTargetUnit->TakeCombatDamage(AttackPower, 5.0f, this, AttackDir);
-				AttackCooldownTimer = 1.2f; // Attack interval
-				CombatState = EDominionCombatState::InCombat;
-			}
+			OverheadStatusText->SetVisibility(true);
+			OverheadStatusText->SetText(FText::FromString(TEXT(">>> ROUT! RETREATING <<<")));
+			OverheadStatusText->SetTextRenderColor(FColor(255, 30, 30));
+		}
+		else if (DamageFeedbackTimer > 0.0f)
+		{
+			OverheadStatusText->SetVisibility(true);
+			FString DmgStr = FString::Printf(TEXT("-%d HP  [%d/%d]"), FMath::RoundToInt(LastDamageTaken), FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
+			OverheadStatusText->SetText(FText::FromString(DmgStr));
+			OverheadStatusText->SetTextRenderColor(FColor(255, 220, 60));
+		}
+		else if (bIsSelected || bIsHovered)
+		{
+			OverheadStatusText->SetVisibility(true);
+			FString StatusStr = FString::Printf(TEXT("%s | HP: %d/%d"), *UnitName, FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
+			OverheadStatusText->SetText(FText::FromString(StatusStr));
+			OverheadStatusText->SetTextRenderColor(bIsSelected ? ((TeamID == 0) ? FColor(255, 215, 0) : FColor(255, 60, 60)) : FColor(100, 220, 255));
 		}
 		else
 		{
-			// March into melee range
-			MoveToLocation(CurrentTargetUnit->GetActorLocation());
+			OverheadStatusText->SetVisibility(false);
 		}
 	}
 }
@@ -524,19 +398,68 @@ void ADominionUnitActor::SetSelected(bool bNewSelected)
 	bIsSelected = bNewSelected;
 	if (SelectionRingMesh)
 	{
-		SelectionRingMesh->SetVisibility(bNewSelected);
+		SelectionRingMesh->SetVisibility(bIsSelected || bIsHovered);
+		if (bIsSelected)
+		{
+			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(this, FLinearColor(1.0f, 0.82f, 0.18f), 0.9f, 0.2f, FLinearColor(3.0f, 2.2f, 0.4f));
+			if (DynMat) SelectionRingMesh->SetMaterial(0, DynMat);
+		}
+		else if (bIsHovered)
+		{
+			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(this, FLinearColor(0.3f, 0.8f, 1.0f), 0.8f, 0.2f, FLinearColor(1.2f, 2.5f, 3.0f));
+			if (DynMat) SelectionRingMesh->SetMaterial(0, DynMat);
+		}
+	}
+	if (OverheadStatusText)
+	{
+		OverheadStatusText->SetVisibility(bIsSelected || bIsHovered || DamageFeedbackTimer > 0.0f || CombatState == EDominionCombatState::RoutingPanic);
+	}
+}
+
+void ADominionUnitActor::SetHovered(bool bNewHovered)
+{
+	if (bIsHovered == bNewHovered) return;
+	bIsHovered = bNewHovered;
+	if (SelectionRingMesh)
+	{
+		SelectionRingMesh->SetVisibility(bIsSelected || bIsHovered);
+		if (bIsSelected)
+		{
+			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(this, FLinearColor(1.0f, 0.82f, 0.18f), 0.9f, 0.2f, FLinearColor(3.0f, 2.2f, 0.4f));
+			if (DynMat) SelectionRingMesh->SetMaterial(0, DynMat);
+		}
+		else if (bIsHovered)
+		{
+			UMaterialInstanceDynamic* DynMat = UDominionTextureFactory::CreateDominionMaterial(this, FLinearColor(0.3f, 0.8f, 1.0f), 0.8f, 0.2f, FLinearColor(1.2f, 2.5f, 3.0f));
+			if (DynMat) SelectionRingMesh->SetMaterial(0, DynMat);
+		}
+	}
+	if (OverheadStatusText)
+	{
+		OverheadStatusText->SetVisibility(bIsSelected || bIsHovered || DamageFeedbackTimer > 0.0f || CombatState == EDominionCombatState::RoutingPanic);
 	}
 }
 
 void ADominionUnitActor::MoveToLocation(const FVector& Destination)
 {
-	TargetDestination = Destination;
+	if (CombatState == EDominionCombatState::RoutingPanic)
+	{
+		return; // Ignore orders while broken
+	}
+
+	TargetDestination = FVector(Destination.X, Destination.Y, GetActorLocation().Z);
 	bHasDestination = true;
 	CurrentTargetUnit = nullptr;
+	CombatState = EDominionCombatState::Marching;
 }
 
 void ADominionUnitActor::AttackTarget(ADominionUnitActor* Target)
 {
+	if (CombatState == EDominionCombatState::RoutingPanic)
+	{
+		return; // Ignore attack orders while broken
+	}
+
 	CurrentTargetUnit = Target;
 	if (Target)
 	{
@@ -546,97 +469,41 @@ void ADominionUnitActor::AttackTarget(ADominionUnitActor* Target)
 
 void ADominionUnitActor::TakeCombatDamage(float DamageAmount, float ArmorPiercing, ADominionUnitActor* Attacker, FVector HitDirection)
 {
-	if (HitDirection.IsNearlyZero() && Attacker && IsValid(Attacker))
+	float EffectiveArmor = FMath::Max(0.0f, Armor - ArmorPiercing);
+	float MitigatedDamage = FMath::Max(2.0f, DamageAmount - (EffectiveArmor * 0.5f));
+	Health -= MitigatedDamage;
+
+	LastDamageTaken = MitigatedDamage;
+	DamageFeedbackTimer = 1.2f;
+
+	// Visual Hit Spark VFX
+	if (UWorld* World = GetWorld())
 	{
-		HitDirection = (GetActorLocation() - Attacker->GetActorLocation()).GetSafeNormal();
+		DrawDebugPoint(World, GetActorLocation() + FVector(0.0f, 0.0f, 60.0f), 12.0f, (TeamID == 0) ? FColor(80, 180, 255) : FColor(255, 70, 50), false, 0.35f);
+		DrawDebugString(World, GetActorLocation() + FVector(0.0f, 0.0f, 100.0f), FString::Printf(TEXT("-%d"), FMath::RoundToInt(MitigatedDamage)), nullptr, FColor(255, 230, 80), 0.6f, true, 1.2f);
 	}
 
-	// 1. Directional Shield Blocking Analysis
-	float FrontDot = 0.0f;
-	if (!HitDirection.IsNearlyZero())
+	// US-3.4: Lightweight Morale & Rout Trigger
+	if (Health > 0.0f && Health <= (MaxHealth * 0.30f) && CombatState != EDominionCombatState::RoutingPanic)
 	{
-		FrontDot = FVector::DotProduct(GetActorForwardVector(), -HitDirection);
-	}
-
-	bool bBlocked = false;
-	bool bRearFlankCrit = false;
-
-	if (FrontDot > 0.35f)
-	{
-		// Frontal Attack into Shield
-		if (bInShieldWall || UnitType == EDominionUnitType::BronzeSpearman)
+		if (FMath::FRand() < 0.45f)
 		{
-			DamageAmount *= 0.25f; // 75% Damage Reduction from Shield Wall!
-			bBlocked = true;
-		}
-	}
-	else if (FrontDot < -0.35f)
-	{
-		// Rear Flank Critical Attack (Shield bypassed)
-		DamageAmount *= 1.50f; // +50% Critical Damage on exposed rear
-		bRearFlankCrit = true;
-	}
+			CombatState = EDominionCombatState::RoutingPanic;
+			RoutTimer = 4.5f;
+			Morale = 0.0f;
+			MoveSpeed = BaseMoveSpeed * 1.30f; // Panic flee speed bonus
+			CurrentTargetUnit = nullptr;
 
-	// 2. Spear Bracing Reflection Physics vs Charging Cavalry / Chariots
-	if (bInShieldWall && FrontDot > 0.40f && Attacker && IsValid(Attacker))
-	{
-		// If attacker is a Chariot or high-speed charging attacker
-		if (Attacker->UnitType == EDominionUnitType::HeavyChariot || Attacker->MoveSpeed > 300.0f)
-		{
-			float ReflectedDmg = FMath::Clamp(Attacker->MoveSpeed * 0.18f + 40.0f, 40.0f, 150.0f);
-			Attacker->TakeCombatDamage(ReflectedDmg, 15.0f, this, -HitDirection);
-
-			if (OverheadStatusText)
-			{
-				OverheadStatusText->SetVisibility(true);
-				OverheadStatusText->SetText(FText::FromString(FString::Printf(TEXT("[BRACED SPEAR REFLECT: %.0f DMG]"), ReflectedDmg)));
-				OverheadStatusText->SetTextRenderColor(FColor(0, 255, 255));
-			}
+			// Flee away from attackers toward perimeter
+			FVector FleeDir = (Attacker) ? (GetActorLocation() - Attacker->GetActorLocation()).GetSafeNormal2D() : FVector(0.0f, -1.0f, 0.0f);
+			TargetDestination = GetActorLocation() + FleeDir * 900.0f;
+			bHasDestination = true;
 
 			if (UWorld* World = GetWorld())
 			{
-				DrawDebugLine(World, GetActorLocation() + FVector(0,0,60), Attacker->GetActorLocation() + FVector(0,0,60), FColor::Cyan, false, 0.6f, 0, 4.0f);
+				DrawDebugString(World, GetActorLocation() + FVector(0.0f, 0.0f, 130.0f), TEXT("ROUT!"), nullptr, FColor(255, 40, 40), 1.2f, true, 1.6f);
 			}
 		}
-	}
-
-	// 3. Armor Mitigation
-	float EffectiveArmor = FMath::Max(0.0f, Armor - ArmorPiercing);
-	if (bInShieldWall)
-	{
-		EffectiveArmor += 8.0f; // Phalanx Shield Wall defense bonus
-	}
-
-	float MitigatedDamage = FMath::Max(3.0f, DamageAmount - (EffectiveArmor * 0.75f));
-	Health -= MitigatedDamage;
-
-	// 4. Combat Feedback Traces & Overhead Text
-	if (UWorld* World = GetWorld())
-	{
-		FColor SparkCol = bBlocked ? FColor::Yellow : (bRearFlankCrit ? FColor::Orange : FColor::Red);
-		DrawDebugPoint(World, GetActorLocation() + FVector(0.0f, 0.0f, 60.0f), 12.0f, SparkCol, false, 0.4f);
-	}
-
-	if (OverheadStatusText && !bIsStarving)
-	{
-		OverheadStatusText->SetVisibility(true);
-		FString StatusStr;
-		if (bBlocked)
-		{
-			StatusStr = FString::Printf(TEXT("[BLOCKED! -75%%] -%.0f HP (%d/%d)"), MitigatedDamage, FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
-			OverheadStatusText->SetTextRenderColor(FColor(255, 215, 0));
-		}
-		else if (bRearFlankCrit)
-		{
-			StatusStr = FString::Printf(TEXT("[FLANK CRIT! +50%%] -%.0f HP (%d/%d)"), MitigatedDamage, FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
-			OverheadStatusText->SetTextRenderColor(FColor(255, 60, 20));
-		}
-		else
-		{
-			StatusStr = FString::Printf(TEXT("-%.0f HP (%d/%d)"), MitigatedDamage, FMath::RoundToInt(Health), FMath::RoundToInt(MaxHealth));
-			OverheadStatusText->SetTextRenderColor(FColor(255, 80, 80));
-		}
-		OverheadStatusText->SetText(FText::FromString(StatusStr));
 	}
 
 	if (Health <= 0.0f)
@@ -645,3 +512,4 @@ void ADominionUnitActor::TakeCombatDamage(float DamageAmount, float ArmorPiercin
 		Destroy();
 	}
 }
+

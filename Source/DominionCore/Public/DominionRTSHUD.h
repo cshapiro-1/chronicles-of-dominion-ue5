@@ -53,6 +53,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Dominion|HUD")
     bool ExecuteHotkeyAction(const FString& Hotkey);
 
+    /** Handles mouse clicks on HUD elements (buttons, ledger tabs) */
+    UFUNCTION(BlueprintCallable, Category = "Dominion|HUD")
+    bool HandleClick(float MouseX, float MouseY);
+
     UFUNCTION(BlueprintCallable, Category = "Dominion|HUD")
     void ToggleTutorial() { bShowTutorialCard = !bShowTutorialCard; }
 

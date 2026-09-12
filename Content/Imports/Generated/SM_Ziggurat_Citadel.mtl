@@ -1,0 +1,7 @@
+# Material file for SM_Ziggurat_Citadel
+newmtl M_SM_Ziggurat_Citadel
+Ka 0.48 0.40 0.32
+Kd 0.48 0.40 0.32
+Ks 0.20 0.20 0.20
+map_Kd T_SM_Ziggurat_Citadel_Albedo.bmp
+map_Bump T_SM_Ziggurat_Citadel_Normal.bmp

@@ -32,7 +32,16 @@ public:
 	const TArray<ADominionUnitActor*>& GetSelectedUnits() const { return SelectedUnits; }
 
 	UFUNCTION(BlueprintPure, Category = "Dominion|Selection")
+	ADominionUnitActor* GetHoveredUnit() const { return HoveredUnit; }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Selection")
 	ADominionBuildingActor* GetSelectedBuilding() const { return SelectedBuilding; }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Selection")
+	bool IsMarqueeSelecting() const { return bIsMarqueeSelecting; }
+
+	UFUNCTION(BlueprintPure, Category = "Dominion|Selection")
+	FVector2D GetMarqueeStartPos() const { return MarqueeStartPos; }
 
 	// --- Tactical Commands ---
 	UFUNCTION(BlueprintCallable, Category = "Dominion|Tactics")
@@ -78,7 +87,11 @@ protected:
 	void OnMoveRightPressed();
 	void OnMoveRightReleased();
 
-	// Hotkey Actions (Formations & Tactics)
+	// Hotkey Actions (Spawning & Tactics)
+	void OnHotkey_Q();
+	void OnHotkey_W();
+	void OnHotkey_E();
+	void OnHotkey_R();
 	void OnHotkey_1();
 	void OnHotkey_2();
 	void OnHotkey_3();
@@ -95,7 +108,6 @@ protected:
 	void OnHotkey_F2();
 	void OnHotkey_F3();
 	void OnHotkey_F4();
-	void OnHotkey_E();
 	void OnHotkey_L();
 
 	ADominionRTSPawn* EnsureRTSPawn();
@@ -103,6 +115,9 @@ protected:
 private:
 	UPROPERTY()
 	TArray<TObjectPtr<ADominionUnitActor>> SelectedUnits;
+
+	UPROPERTY()
+	TObjectPtr<ADominionUnitActor> HoveredUnit;
 
 	UPROPERTY()
 	TObjectPtr<ADominionBuildingActor> SelectedBuilding;

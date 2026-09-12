@@ -1,0 +1,6 @@
+newmtl M_SM_Temple_Cella
+Ka 0.48 0.40 0.32
+Kd 0.48 0.40 0.32
+Ks 0.20 0.20 0.20
+map_Kd T_SM_Temple_Cella_Albedo.bmp
+map_Bump T_SM_Temple_Cella_Normal.bmp

@@ -1,0 +1,12 @@
+newmtl Mudbrick
+Kd 0.64 0.50 0.36
+
+newmtl PatinaBronze
+Kd 0.18 0.24 0.22
+Ks 0.8 0.8 0.8
+Ns 40.0
+
+newmtl DarkBasalt
+Kd 0.16 0.15 0.14
+Ks 0.2 0.2 0.2
+Ns 15.0

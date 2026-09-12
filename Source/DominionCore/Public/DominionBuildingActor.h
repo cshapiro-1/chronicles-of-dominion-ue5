@@ -48,7 +48,7 @@ public:
 	void SetArchitecturalStyle(EDominionArchitecturalStyle NewStyle);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building Stats")
-	FString BuildingName = TEXT("Colossal Citadel of Dominion");
+	FString BuildingName = TEXT("Citadel of Ur-Kish");
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building Stats")
 	EDominionBuildingType BuildingType = EDominionBuildingType::ZigguratTownCenter;
@@ -60,10 +60,10 @@ public:
 	int32 TeamID = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building Stats")
-	float Health = 10000.0f;
+	float Health = 5000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building Stats")
-	float MaxHealth = 10000.0f;
+	float MaxHealth = 5000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Building Stats")
 	bool bIsSelected = false;
@@ -71,57 +71,6 @@ public:
 	// --- 3D Architectural Components ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> BuildingMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> Tier2Mesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> TempleShrineMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> ShrineRoofMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> RampMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> LeftRampMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> RightRampMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> GateArchMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> TowerLeftSpire;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> TowerRightSpire;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> SpikeRidgeMesh1;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> SpikeRidgeMesh2;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> FlyingButtressLeft;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> FlyingButtressRight;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> BrazierMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<class UPointLightComponent> BrazierLight;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> BannerLeftMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStaticMeshComponent> BannerRightMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> SelectionBoxMesh;
